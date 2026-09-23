@@ -27,7 +27,9 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'pnpm run build && pnpm run start',
+    // `build:deps` d'abord : `apps/web` consomme `packages/shared-types` via son
+    // `dist/`, qui n'existe pas sur un clone neuf.
+    command: 'pnpm -C ../.. run build:deps && pnpm run build && pnpm run start',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
