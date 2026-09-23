@@ -1,0 +1,12 @@
+# Fins de ligne normalisées en LF partout : cohérent avec .editorconfig,
+# prettier.config.mjs (endOfLine: 'lf') et la CI Linux.
+* text=auto eol=lf
+
+# Fichiers binaires
+*.ico binary
+*.png binary
+*.jpg binary
+*.woff2 binary
+
+# Lockfile : généré, masqué dans les diffs de pull request
+pnpm-lock.yaml linguist-generated=true -diff

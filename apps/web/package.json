@@ -1,0 +1,37 @@
+{
+  "name": "@schemavibe/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint --max-warnings 0",
+    "typecheck": "next typegen && tsc --noEmit",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:status": "supabase status",
+    "db:reset": "supabase db reset"
+  },
+  "dependencies": {
+    "@schemavibe/shared-types": "workspace:*",
+    "next": "16.3.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@tailwindcss/postcss": "4.1.18",
+    "@types/node": "22.18.12",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.4",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.6",
+    "eslint-config-prettier": "10.1.8",
+    "supabase": "2.117.0",
+    "tailwindcss": "4.1.18",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.70.1"
+  }
+}

@@ -1,0 +1,12 @@
+node_modules/
+.next/
+dist/
+coverage/
+pnpm-lock.yaml
+apps/web/supabase/.temp/
+
+# Fichiers générés par Next.js
+apps/web/next-env.d.ts
+
+# Document vivant : sa mise en forme fait foi telle quelle, Prettier n'y touche pas.
+docs/schemavibe-cahier-des-charges.md

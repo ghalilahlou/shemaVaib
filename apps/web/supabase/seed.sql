@@ -1,0 +1,5 @@
+-- Données de départ de la base SchemaVibe.
+--
+-- Chargé automatiquement par `supabase db reset` (voir [db.seed] dans config.toml).
+-- Les 8 patterns de la section 5.2 du cahier des charges y seront insérés au
+-- ticket SV-008, une fois le schéma initial en place (SV-002).
