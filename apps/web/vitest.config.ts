@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 /**
@@ -6,6 +7,11 @@ import { defineConfig } from 'vitest/config';
  * `pnpm db:reset`. Ils sont en série, parce qu'ils partagent une seule base.
  */
 export default defineConfig({
+  resolve: {
+    alias: {
+      'server-only': fileURLToPath(new URL('./tests/stubs/server-only.ts', import.meta.url)),
+    },
+  },
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],

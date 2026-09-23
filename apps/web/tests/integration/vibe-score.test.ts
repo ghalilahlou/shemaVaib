@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../lib/supabase/database.types.js';
+import type { Database } from '../../lib/supabase/database.types';
 import {
   creerClientAdmin,
   creerUtilisateurDeTest,
   supprimerUtilisateurDeTest,
-} from '../helpers/supabase.js';
+} from '../helpers/supabase';
 
 /**
  * Le Vibe Score est un score composite (section 16) stocké en `numeric(5,2)`

@@ -13,3 +13,6 @@ docs/schemavibe-cahier-des-charges.md
 
 # Types générés par `supabase gen types`
 apps/web/lib/supabase/database.types.ts
+
+apps/web/test-results/
+apps/web/playwright-report/

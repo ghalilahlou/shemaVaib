@@ -39,3 +39,61 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  tests:
+    name: Tests unitaires, d'intégration et end-to-end
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Installer les dépendances
+        run: pnpm install --frozen-lockfile
+
+      # Les tests d'intégration et end-to-end tournent contre une vraie instance
+      # Postgres, pas contre un double : c'est ce qu'exige la section 21 du
+      # cahier des charges, et c'est la seule façon de vérifier la RLS.
+      - name: Démarrer Supabase en local
+        working-directory: apps/web
+        run: pnpm exec supabase start
+
+      - name: Exporter les variables d'environnement Supabase
+        working-directory: apps/web
+        run: |
+          pnpm exec supabase status -o env > supabase.env
+          . ./supabase.env
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000"
+          } >> "$GITHUB_ENV"
+          rm supabase.env
+
+      - name: Tests unitaires et d'intégration
+        run: pnpm test
+
+      - name: Installer le navigateur Playwright
+        working-directory: apps/web
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Tests end-to-end
+        working-directory: apps/web
+        run: pnpm run test:e2e
+
+      - name: Conserver le rapport Playwright en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-playwright
+          path: apps/web/playwright-report/
+          retention-days: 7

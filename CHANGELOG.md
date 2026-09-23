@@ -18,6 +18,13 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   toutes les tables. Schémas Zod partagés dans `packages/shared-types`, types TypeScript générés
   depuis la base, et harnais de test Vitest (unitaire et intégration).
 
+- **SV-003** — CRUD Projets : création, liste filtrable par statut et page de détail. Feature
+  `projects` organisée en couches (composants, Server Action, repository, schéma Zod) conformément
+  à la section 18. Politiques Row Level Security : un projet sorti du brouillon est visible de
+  tous, un brouillon reste privé, et seul le porteur crée, modifie ou supprime les siens. Clients
+  Supabase de session et d'administration dans `lib/supabase/`. Tests d'intégration du repository
+  sous trois identités (anonyme, porteur, tiers) et parcours end-to-end Playwright.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
