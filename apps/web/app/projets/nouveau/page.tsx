@@ -1,12 +1,25 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
+import { createServerSupabaseClient } from '../../../lib/supabase/server';
+import { recupererUtilisateurConnecte } from '../../../features/auth/repository/session-repository';
 import { ProjectForm } from '../../../features/projects/components/project-form';
 
 export const metadata: Metadata = {
   title: 'Nouveau projet — SchemaVibe',
 };
 
-export default function NewProjectPage() {
+export default async function NewProjectPage() {
+  const client = await createServerSupabaseClient();
+  const utilisateur = await recupererUtilisateurConnecte(client);
+
+  // Rediriger plutôt que d'afficher un formulaire voué au refus. Le garde-fou
+  // de la Server Action reste en place : cette redirection est un confort, pas
+  // la protection.
+  if (!utilisateur) {
+    redirect('/connexion?next=/projets/nouveau');
+  }
+
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-6 py-12">
       <nav>

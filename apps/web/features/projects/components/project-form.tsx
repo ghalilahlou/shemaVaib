@@ -35,6 +35,7 @@ export function ProjectForm() {
       {etat.statut === 'succes' ? (
         <p
           role="status"
+          data-testid="formulaire-succes"
           className="rounded-md border border-green-600/40 bg-green-600/5 px-3 py-2 text-sm"
         >
           Projet créé.

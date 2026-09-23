@@ -46,7 +46,8 @@ test.beforeAll(async () => {
   }
 
   porteurId = utilisateur.user.id;
-  await admin.from('users').insert({ id: porteurId, nom: 'Porteuse e2e' });
+  // Le profil est créé par le trigger d'inscription (SV-001) : on le renomme.
+  await admin.from('users').update({ nom: 'Porteuse e2e' }).eq('id', porteurId);
 
   const { data: projets } = await admin
     .from('projects')
@@ -109,26 +110,12 @@ test('un brouillon d’autrui est introuvable, pas « interdit »', async ({ pag
   expect(reponse?.status()).toBe(404);
 });
 
-test('le formulaire de création refuse un visiteur non connecté', async ({ page }) => {
-  await page.goto('/projets/nouveau');
-
-  await page.getByLabel('Nom du projet').fill('Projet tenté sans session');
-  await page.getByRole('button', { name: 'Créer le projet' }).click();
-
-  await expect(page.getByTestId('formulaire-erreur')).toHaveText(
-    'Vous devez être connecté pour créer un projet.',
-  );
-});
-
-test('le formulaire signale un nom vide sans passer par le serveur de données', async ({
+test('le formulaire de création renvoie un visiteur anonyme vers la connexion', async ({
   page,
 }) => {
+  // Depuis SV-001, la page ne montre plus un formulaire voué au refus : elle
+  // redirige. Le garde-fou de la Server Action reste couvert côté intégration.
   await page.goto('/projets/nouveau');
-  await page.getByRole('button', { name: 'Créer le projet' }).click();
 
-  // La session manque avant même la validation : c'est ce refus-là qui doit
-  // remonter, et non une erreur de champ — l'ordre des gardes compte.
-  await expect(page.getByTestId('formulaire-erreur')).toHaveText(
-    'Vous devez être connecté pour créer un projet.',
-  );
+  await expect(page).toHaveURL(/\/connexion/);
 });

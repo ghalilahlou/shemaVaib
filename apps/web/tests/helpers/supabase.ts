@@ -71,10 +71,12 @@ export async function creerUtilisateurDeTest(
     );
   }
 
-  const { error: erreurProfil } = await admin.from('users').insert({ id: data.user.id, nom });
+  // Le profil est créé par le trigger `creer_profil_a_l_inscription` (SV-001) ;
+  // il ne reste qu'à lui donner le nom attendu par le test.
+  const { error: erreurProfil } = await admin.from('users').update({ nom }).eq('id', data.user.id);
 
   if (erreurProfil) {
-    throw new Error(`Création du profil de test impossible : ${erreurProfil.message}`);
+    throw new Error(`Mise à jour du profil de test impossible : ${erreurProfil.message}`);
   }
 
   emailsParUtilisateur.set(data.user.id, email);
