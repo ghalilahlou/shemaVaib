@@ -42,6 +42,20 @@ let contributeur: SupabaseClient<Database>;
 let projetPublicId: string;
 let projetBrouillonId: string;
 let patternId: string;
+let ticketTemoinId: string;
+let compteurAmorce = 0;
+
+/**
+ * Amorce : une modification d'un ticket public, que tout abonné a le droit de
+ * voir. La priorité alterne pour qu'il y ait toujours un vrai changement.
+ */
+async function amorcer(): Promise<void> {
+  compteurAmorce += 1;
+  await admin
+    .from('tickets')
+    .update({ priorite: compteurAmorce % 2 === 0 ? 'haute' : 'basse' })
+    .eq('id', ticketTemoinId);
+}
 
 function formulaire(projetId: string, titre: string) {
   return {
@@ -83,6 +97,13 @@ beforeAll(async () => {
 
   const patterns = await listerPatterns(anonyme);
   patternId = patterns.find((pattern) => pattern.nom === 'Spec-First')!.id;
+
+  const temoin = await creerTicket(
+    porteur,
+    formulaire(projetPublicId, 'Ticket témoin d’amorce'),
+    'ouvert',
+  );
+  ticketTemoinId = temoin.id;
 });
 
 afterAll(async () => {
@@ -101,6 +122,7 @@ describe('diffusion des changements de ticket', () => {
     const recus = await ecouter(
       anonyme,
       ['tickets'],
+      amorcer,
       async () => {
         await reclamerTicket(contributeur, ticket.id);
       },
@@ -135,7 +157,7 @@ describe('diffusion des changements de ticket', () => {
       'brouillon',
     );
 
-    const recus = await ecouter(anonyme, ['tickets'], async () => {
+    const recus = await ecouter(anonyme, ['tickets'], amorcer, async () => {
       await porteur.from('tickets').update({ titre: 'Brouillon renommé' }).eq('id', brouillon.id);
     });
 
@@ -151,7 +173,7 @@ describe('diffusion des changements de ticket', () => {
       'ouvert',
     );
 
-    const recus = await ecouter(anonyme, ['tickets'], async () => {
+    const recus = await ecouter(anonyme, ['tickets'], amorcer, async () => {
       await porteur.from('tickets').update({ priorite: 'haute' }).eq('id', cache.id);
     });
 
@@ -183,6 +205,7 @@ describe('diffusion des changements de ticket', () => {
     const recus = await ecouter(
       porteur,
       ['tickets'],
+      amorcer,
       async () => {
         await porteur.from('tickets').update({ priorite: 'critique' }).eq('id', brouillon.id);
       },
@@ -210,7 +233,8 @@ describe('diffusion des soumissions', () => {
 
     const recus = await ecouter(
       anonyme,
-      ['submissions'],
+      ['tickets', 'submissions'],
+      amorcer,
       async () => {
         await soumettreSolution(contributeur, {
           ticketId: ticket.id,
@@ -219,10 +243,15 @@ describe('diffusion des soumissions', () => {
           resumeMd: null,
         });
       },
-      { jusqua: (evenement) => evenement.ligne.ticket_id === ticket.id },
+      {
+        jusqua: (evenement) =>
+          evenement.table === 'submissions' && evenement.ligne.ticket_id === ticket.id,
+      },
     );
 
-    const evenement = recus.filter((recu) => recu.ligne.ticket_id === ticket.id).at(-1);
+    const evenement = recus
+      .filter((recu) => recu.table === 'submissions' && recu.ligne.ticket_id === ticket.id)
+      .at(-1);
 
     expect(evenement, 'la soumission doit parvenir à l’abonné').toBeDefined();
     expect(evenement?.type).toBe('INSERT');
@@ -244,7 +273,7 @@ describe('diffusion des soumissions', () => {
       .update({ statut: 'reclame', reclame_par: porteurId, reclame_le: new Date().toISOString() })
       .eq('id', cache.id);
 
-    const recus = await ecouter(anonyme, ['submissions'], async () => {
+    const recus = await ecouter(anonyme, ['tickets', 'submissions'], amorcer, async () => {
       await soumettreSolution(porteur, {
         ticketId: cache.id,
         diffUrl: DIFF,
@@ -253,7 +282,9 @@ describe('diffusion des soumissions', () => {
       });
     });
 
-    expect(recus.filter((recu) => recu.ligne.ticket_id === cache.id)).toEqual([]);
+    expect(
+      recus.filter((recu) => recu.table === 'submissions' && recu.ligne.ticket_id === cache.id),
+    ).toEqual([]);
 
     await supprimerTicket(porteur, cache.id);
   });

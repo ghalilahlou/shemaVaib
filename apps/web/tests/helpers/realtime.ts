@@ -15,6 +15,14 @@ import type { Database } from '../../lib/supabase/database.types';
  * test instable, puisque la latence de diffusion varie d'une exécution à
  * l'autre. Un test qui s'attend à ne rien recevoir, lui, ne peut qu'écouter un
  * moment puis conclure.
+ *
+ * Enfin — et c'est ce qui manquait — il exige une *amorce*. Le statut
+ * `SUBSCRIBED` signale que le canal est ouvert, pas que la réplication a pris
+ * l'abonnement en compte : une modification faite juste après peut n'atteindre
+ * personne. L'amorce produit un changement volontairement visible et le répète
+ * jusqu'à ce qu'il revienne, ce qui prouve que le canal délivre vraiment. Sans
+ * elle, un test négatif constaterait un silence dû à un abonnement pas encore
+ * actif, et passerait sans rien démontrer.
  */
 
 export interface EvenementRecu {
@@ -45,9 +53,20 @@ export interface OptionsEcoute {
   jusqua?: (evenement: EvenementRecu) => boolean;
 }
 
+/** Intervalle entre deux tentatives d'amorce. */
+const INTERVALLE_AMORCE_MS = 400;
+
+/** Nombre maximal de tentatives avant de déclarer le canal muet. */
+const TENTATIVES_AMORCE = 25;
+
 export async function ecouter(
   client: SupabaseClient<Database>,
   tables: readonly ('tickets' | 'submissions')[],
+  /**
+   * Produit un changement que l'abonné a le droit de voir. Répété jusqu'à ce
+   * qu'un événement revienne, il atteste que le canal délivre.
+   */
+  amorce: () => Promise<void>,
   declencheur: () => Promise<void>,
   options: OptionsEcoute = {},
 ): Promise<EvenementRecu[]> {
@@ -97,6 +116,24 @@ export async function ecouter(
   });
 
   try {
+    // Amorçage : on répète un changement visible jusqu'à en recevoir l'écho.
+    let amorce_recue = false;
+    for (let tentative = 0; tentative < TENTATIVES_AMORCE && !amorce_recue; tentative += 1) {
+      await amorce();
+      await new Promise((resoudre) => setTimeout(resoudre, INTERVALLE_AMORCE_MS));
+      amorce_recue = recus.length > 0;
+    }
+
+    if (!amorce_recue) {
+      throw new Error(
+        'Le canal Realtime n’a délivré aucun événement d’amorce : ' +
+          'toute conclusion tirée de ce test serait sans valeur.',
+      );
+    }
+
+    // Les événements de l'amorce ne regardent pas le test lui-même.
+    recus.length = 0;
+
     const attente = options.jusqua
       ? new Promise<void>((resoudre) => {
           signalerArrivee = resoudre;
