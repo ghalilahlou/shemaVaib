@@ -61,7 +61,7 @@ const TENTATIVES_AMORCE = 25;
 
 export async function ecouter(
   client: SupabaseClient<Database>,
-  tables: readonly ('tickets' | 'submissions')[],
+  tables: readonly ('tickets' | 'submissions' | 'messages')[],
   /**
    * Produit un changement que l'abonné a le droit de voir. Répété jusqu'à ce
    * qu'un événement revienne, il atteste que le canal délivre.
