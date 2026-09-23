@@ -1,6 +1,6 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Pattern, Ticket } from '@schemavibe/shared-types';
+import type { Pattern, Submission, Ticket } from '@schemavibe/shared-types';
 import type { Database } from '../../../lib/supabase/database.types';
 import type { TicketFormData, TicketListFilters } from '../schema';
 
@@ -14,6 +14,11 @@ import type { TicketFormData, TicketListFilters } from '../schema';
 
 /** Un pattern tel qu'il est affiché : nom, rattachement et principe (section 5.2). */
 export type PatternResume = Pick<Pattern, 'id' | 'nom' | 'categorie' | 'principe' | 'cas_usage'>;
+
+/** Une soumission accompagnée du nom public de son auteur. */
+export interface SoumissionAvecAuteur extends Submission {
+  auteur: { id: string; nom: string } | null;
+}
 
 /** Un ticket accompagné de son projet et des patterns qui lui sont rattachés. */
 export interface TicketDetaille extends Ticket {
@@ -271,6 +276,84 @@ export async function relacherTicket(
   }
 
   return data as unknown as Ticket;
+}
+
+/**
+ * Erreur métier d'une soumission refusée, distincte d'une panne technique.
+ *
+ * Le motif permet de dire pourquoi : le ticket n'est plus tenu par l'appelant —
+ * cas typique d'un relâchement survenu entre l'affichage de la page et l'envoi —
+ * ou les liens obligatoires manquent.
+ */
+export class SoumissionError extends Error {
+  constructor(
+    readonly motif: 'ticket_non_soumettable' | 'liens_requis' | 'authentification_requise',
+    message: string,
+    cause?: unknown,
+  ) {
+    super(message, { cause });
+    this.name = 'SoumissionError';
+  }
+}
+
+/**
+ * Rattache une soumission à un ticket réclamé par l'utilisateur de la session.
+ *
+ * Passe par `soumettre_solution` : la transition du ticket vers « soumis » y
+ * sert de garde à l'insertion, ce qui écarte la soumission orpheline sur un
+ * ticket relâché entre-temps. Voir la migration
+ * `20260924040000_soumettre_une_solution.sql`.
+ */
+export async function soumettreSolution(
+  client: SupabaseClient<Database>,
+  entree: { ticketId: string; diffUrl: string; previewUrl: string; resumeMd: string | null },
+): Promise<Submission> {
+  const { data, error } = await client.rpc('soumettre_solution', {
+    ticket: entree.ticketId,
+    diff_url: entree.diffUrl,
+    preview_url: entree.previewUrl,
+    // L'argument SQL a une valeur par défaut : un résumé absent est omis, et
+    // non passé à `undefined` — ce que `exactOptionalPropertyTypes` interdit.
+    ...(entree.resumeMd === null ? {} : { resume_md: entree.resumeMd }),
+  });
+
+  if (error) {
+    const motif = error.message.includes('authentification_requise')
+      ? 'authentification_requise'
+      : error.message.includes('liens_requis')
+        ? 'liens_requis'
+        : 'ticket_non_soumettable';
+
+    throw new SoumissionError(motif, 'Cette solution ne peut pas être soumise.', error);
+  }
+
+  return data as unknown as Submission;
+}
+
+/**
+ * Liste les soumissions d'un ticket, de la plus récente à la plus ancienne.
+ *
+ * Plusieurs soumissions coexistent sur un même ticket : la boucle Review-Refine
+ * (section 5.2) suppose qu'on repasse, et l'historique des tentatives fait
+ * partie de ce qu'un ticket expose (section 5.1).
+ */
+export async function listerSoumissions(
+  client: SupabaseClient<Database>,
+  ticketId: string,
+): Promise<SoumissionAvecAuteur[]> {
+  const { data, error } = await client
+    .from('submissions')
+    .select(
+      'id, ticket_id, auteur_id, diff_url, preview_url, resultat_qualite, resume_md, cree_le, maj_le, auteur:users!submissions_auteur_id_fkey(id, nom)',
+    )
+    .eq('ticket_id', ticketId)
+    .order('cree_le', { ascending: false });
+
+  if (error) {
+    throw new TicketRepositoryError('Impossible de lister les soumissions.', error);
+  }
+
+  return (data ?? []) as unknown as SoumissionAvecAuteur[];
 }
 
 /** Liste la bibliothèque de patterns, pour alimenter le formulaire de création. */

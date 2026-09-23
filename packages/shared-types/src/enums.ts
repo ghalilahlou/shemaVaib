@@ -18,6 +18,8 @@ export const ticketStatutSchema = z.enum([
   'brouillon',
   'ouvert',
   'reclame',
+  // Une solution est rattachée au ticket ; la revue n'a pas encore commencé.
+  'soumis',
   'en_revue',
   'fusionne',
   'ferme',

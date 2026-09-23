@@ -421,6 +421,31 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      soumettre_solution: {
+        Args: {
+          diff_url: string
+          preview_url: string
+          resume_md?: string
+          ticket: string
+        }
+        Returns: {
+          auteur_id: string | null
+          cree_le: string
+          diff_url: string | null
+          id: string
+          maj_le: string
+          preview_url: string | null
+          resultat_qualite: Database["public"]["Enums"]["soumission_resultat"]
+          resume_md: string | null
+          ticket_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "submissions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       jalon_sante: "a_jour" | "a_risque" | "bloque"
@@ -434,6 +459,7 @@ export type Database = {
         | "brouillon"
         | "ouvert"
         | "reclame"
+        | "soumis"
         | "en_revue"
         | "fusionne"
         | "ferme"
@@ -575,6 +601,7 @@ export const Constants = {
         "brouillon",
         "ouvert",
         "reclame",
+        "soumis",
         "en_revue",
         "fusionne",
         "ferme",

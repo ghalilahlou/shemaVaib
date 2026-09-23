@@ -51,6 +51,12 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   réclamations simultanées ne laissent passer que la première, et réclamer ne donne aucun droit
   de modification sur le ticket.
 
+- **SV-006** — Soumission de solution : le réclamant courant d'un ticket y rattache une solution
+  (lien du diff et de l'aperçu obligatoires, résumé libre facultatif), ce qui fait passer le ticket
+  au statut « soumis ». Plusieurs soumissions successives sont possibles, conformément à la boucle
+  Review-Refine, et l'historique survit au relâchement du ticket. La transition d'état sert de garde
+  à l'insertion : aucune soumission ne peut être créée par qui ne tient pas le ticket.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
