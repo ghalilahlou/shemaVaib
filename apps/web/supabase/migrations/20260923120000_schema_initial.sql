@@ -116,12 +116,16 @@ create trigger projects_touch_maj_le
 -- ---------------------------------------------------------------------------
 
 -- Un jalon est un thème, pas une date (section 11) : date_cible reste optionnelle.
+--
+-- La santé du jalon n'est pas une colonne : elle dépend du temps écoulé depuis
+-- la dernière activité, donc une valeur stockée deviendrait fausse sans
+-- qu'aucune écriture n'ait lieu. Elle est calculée à la lecture par la vue
+-- `jalons_avec_sante` (SV-009).
 create table public.milestones (
   id uuid primary key default gen_random_uuid(),
   projet_id uuid not null references public.projects (id) on delete cascade,
   theme text not null check (length(trim(theme)) between 1 and 120),
   date_cible date,
-  sante public.jalon_sante not null default 'a_jour',
   cree_le timestamptz not null default now(),
   maj_le timestamptz not null default now()
 );

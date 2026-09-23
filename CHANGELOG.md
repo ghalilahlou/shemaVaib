@@ -63,6 +63,11 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   lecture : un visiteur anonyme ne reçoit rien d'un ticket ou d'un projet en brouillon, y compris
   pour un événement survenu pendant qu'il regarde.
 
+- **SV-009** — Jalons et roadmap : CRUD des jalons, rattachement de tickets existants, dépendances
+  explicites entre tickets avec refus des cycles. La progression et la santé (à jour, à risque,
+  bloqué) sont calculées à la lecture par la vue `jalons_avec_sante`, selon la définition
+  opérationnelle de la section 11. Un jalon hérite de la visibilité de son projet.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
