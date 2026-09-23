@@ -7,6 +7,7 @@ export const LIBELLES_STATUT: Record<TicketStatut, string> = {
   brouillon: 'Brouillon',
   ouvert: 'Ouvert',
   reclame: 'Réclamé',
+  soumis: 'Soumis',
   en_revue: 'En revue',
   fusionne: 'Fusionné',
   ferme: 'Fermé',

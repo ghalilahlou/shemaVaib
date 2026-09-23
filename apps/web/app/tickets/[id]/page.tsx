@@ -3,13 +3,17 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { evaluerDefinitionOfReady } from '@schemavibe/shared-types';
 import { createServerSupabaseClient } from '../../../lib/supabase/server';
-import { recupererTicket } from '../../../features/tickets/repository/tickets-repository';
+import {
+  listerSoumissions,
+  recupererTicket,
+} from '../../../features/tickets/repository/tickets-repository';
 import {
   LIBELLES_COMPLEXITE,
   LIBELLES_STATUT,
 } from '../../../features/tickets/components/ticket-card';
 import { LIBELLES_MOTIFS } from '../../../features/tickets/actions/ticket-action-state';
 import { ReclamationPanel } from '../../../features/tickets/components/reclamation-panel';
+import { SubmissionPanel } from '../../../features/tickets/components/submission-panel';
 import { recupererUtilisateurConnecte } from '../../../features/auth/repository/session-repository';
 
 export async function generateMetadata({ params }: PageProps<'/tickets/[id]'>): Promise<Metadata> {
@@ -40,7 +44,13 @@ export default async function TicketDetailPage({ params }: PageProps<'/tickets/[
   const estReclamant = utilisateur?.id === ticket.reclame_par;
   const estPorteur = utilisateur?.id === ticket.projet?.proprietaire_id;
   const peutReclamer = estConnecte && ticket.statut === 'ouvert';
-  const peutRelacher = estConnecte && ticket.statut === 'reclame' && (estReclamant || estPorteur);
+  const enCoursDeTravail = ticket.statut === 'reclame' || ticket.statut === 'soumis';
+  const peutRelacher = estConnecte && enCoursDeTravail && (estReclamant || estPorteur);
+  // Seul le réclamant courant soumet. Une soumission reste possible après une
+  // première : la boucle Review-Refine suppose qu'on repasse (section 5.2).
+  const peutSoumettre = estConnecte && estReclamant && enCoursDeTravail;
+
+  const soumissions = await listerSoumissions(client, ticket.id);
 
   const conformite = evaluerDefinitionOfReady({
     contexte: ticket.contexte,
@@ -105,6 +115,12 @@ export default async function TicketDetailPage({ params }: PageProps<'/tickets/[
         testId="ticket-criteres"
       />
       <Section titre="Critère de test" contenu={ticket.critere_test} testId="ticket-critere-test" />
+
+      <SubmissionPanel
+        ticketId={ticket.id}
+        soumissions={soumissions}
+        peutSoumettre={peutSoumettre}
+      />
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium">Patterns suggérés</h2>
