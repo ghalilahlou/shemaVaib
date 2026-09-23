@@ -2,7 +2,8 @@
 
 import { useActionState } from 'react';
 import Link from 'next/link';
-import { MAX_TICKET_TITLE_LENGTH, type Pattern } from '@schemavibe/shared-types';
+import { MAX_TICKET_TITLE_LENGTH } from '@schemavibe/shared-types';
+import type { PatternResume } from '../repository/tickets-repository';
 import { createTicketAction } from '../actions/create-ticket';
 import {
   ETAT_INITIAL,
@@ -23,7 +24,7 @@ export function TicketForm({
   patterns,
 }: {
   projetId: string;
-  patterns: Pick<Pattern, 'id' | 'nom' | 'categorie'>[];
+  patterns: PatternResume[];
 }) {
   const [etat, action, enCours] = useActionState<TicketActionState, FormData>(
     createTicketAction,
@@ -169,18 +170,22 @@ export function TicketForm({
             qu’elle n’est pas alimentée (ticket SV-008).
           </p>
         ) : (
-          <ul className="flex flex-col gap-1.5">
+          <ul data-testid="patterns-disponibles" className="flex flex-col gap-2">
             {patterns.map((pattern) => (
-              <li key={pattern.id} className="flex items-center gap-2">
+              <li key={pattern.id} className="flex items-start gap-2">
                 <input
                   id={`pattern-${pattern.id}`}
                   name="patterns_suggeres"
                   type="checkbox"
                   value={pattern.id}
+                  className="mt-1"
                 />
                 <label htmlFor={`pattern-${pattern.id}`} className="text-sm">
-                  {pattern.nom}
+                  <span className="font-medium">{pattern.nom}</span>
                   <span className="opacity-60"> · {pattern.categorie}</span>
+                  {pattern.principe ? (
+                    <span className="block text-xs opacity-60">{pattern.principe}</span>
+                  ) : null}
                 </label>
               </li>
             ))}

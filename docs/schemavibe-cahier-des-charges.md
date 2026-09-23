@@ -550,7 +550,7 @@ Un ADR n'est jamais modifié après avoir été accepté : un changement de déc
 | SV-005 | Réclamer un ticket | ☐ À faire |
 | SV-006 | Soumission de solution | ☐ À faire |
 | SV-007 | Dashboard pulse | ☐ À faire |
-| SV-008 | Bibliothèque de patterns | ☐ À faire |
+| SV-008 | Bibliothèque de patterns | ✅ Terminé |
 | SV-009 | Jalons et roadmap | ☐ À faire |
 | SV-010 | Messagerie | ☐ À faire |
 | SV-011 | Serveur MCP — scan_repo (v1) | ☐ À faire |

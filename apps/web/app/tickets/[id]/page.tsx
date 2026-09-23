@@ -90,13 +90,22 @@ export default async function TicketDetailPage({ params }: PageProps<'/tickets/[
         {ticket.patterns_suggeres.length === 0 ? (
           <p className="text-sm opacity-60">Aucun pattern suggéré.</p>
         ) : (
-          <ul data-testid="ticket-patterns" className="flex flex-wrap gap-1.5">
+          <ul data-testid="ticket-patterns" className="flex flex-col gap-2">
             {ticket.patterns_suggeres.map((pattern) => (
               <li
                 key={pattern.id}
-                className="rounded border border-black/10 px-2 py-0.5 text-sm dark:border-white/15"
+                className="rounded border border-black/10 px-3 py-2 text-sm dark:border-white/15"
               >
-                {pattern.nom}
+                <span className="font-medium">{pattern.nom}</span>
+                <span className="opacity-60"> · {pattern.categorie}</span>
+                {pattern.principe ? (
+                  <span className="block text-xs opacity-70">{pattern.principe}</span>
+                ) : null}
+                {pattern.cas_usage ? (
+                  <span className="block text-xs opacity-50">
+                    Cas d’usage : {pattern.cas_usage}
+                  </span>
+                ) : null}
               </li>
             ))}
           </ul>
