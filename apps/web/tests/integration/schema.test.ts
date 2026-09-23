@@ -67,12 +67,15 @@ describe('les 7 entités de la section 9 existent', () => {
 });
 
 /**
- * Trois tables sont volontairement lisibles sans être connecté :
- * `patterns`, référentiel public dès la migration initiale, puis `users` et
- * `projects`, ouverts par SV-003 — un profil est public par construction
- * (section 9) et un projet vivant doit être visible (section 5.4).
+ * Tables volontairement lisibles sans être connecté : `patterns`, référentiel
+ * public dès la migration initiale ; `users` et `projects`, ouverts par SV-003
+ * — un profil est public par construction (section 9) et un projet vivant doit
+ * être visible (section 5.4) ; puis `tickets` et `ticket_patterns`, ouverts par
+ * SV-004, mais sous condition : seuls les tickets publiés d'un projet publié.
+ * Cette condition-là est vérifiée juste en dessous, et en détail dans
+ * `tickets-repository.test.ts`.
  */
-const TABLES_PUBLIQUES = ['patterns', 'users', 'projects'] as const;
+const TABLES_PUBLIQUES = ['patterns', 'users', 'projects', 'tickets', 'ticket_patterns'] as const;
 
 describe('Row Level Security', () => {
   it.each(TABLES.filter((table) => !(TABLES_PUBLIQUES as readonly string[]).includes(table)))(
@@ -106,6 +109,21 @@ describe('Row Level Security', () => {
       .select('id');
 
     expect(data ?? []).toEqual([]);
+  });
+
+  it('n’expose à un anonyme que des tickets publiés', async () => {
+    const { data, error } = await anonyme.from('tickets').select('statut');
+
+    expect(error).toBeNull();
+    expect((data ?? []).every((ticket) => ticket.statut !== 'brouillon')).toBe(true);
+  });
+
+  it('un client anonyme ne peut pas créer de ticket', async () => {
+    const { error } = await anonyme
+      .from('tickets')
+      .insert({ projet_id: projetId, titre: 'Ticket interdit' });
+
+    expect(error).not.toBeNull();
   });
 
   it('un client anonyme ne peut pas créer de projet', async () => {

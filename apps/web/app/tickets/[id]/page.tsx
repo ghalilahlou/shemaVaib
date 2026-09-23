@@ -9,6 +9,8 @@ import {
   LIBELLES_STATUT,
 } from '../../../features/tickets/components/ticket-card';
 import { LIBELLES_MOTIFS } from '../../../features/tickets/actions/ticket-action-state';
+import { ReclamationPanel } from '../../../features/tickets/components/reclamation-panel';
+import { recupererUtilisateurConnecte } from '../../../features/auth/repository/session-repository';
 
 export async function generateMetadata({ params }: PageProps<'/tickets/[id]'>): Promise<Metadata> {
   const { id } = await params;
@@ -21,13 +23,24 @@ export async function generateMetadata({ params }: PageProps<'/tickets/[id]'>): 
 export default async function TicketDetailPage({ params }: PageProps<'/tickets/[id]'>) {
   const { id } = await params;
   const client = await createServerSupabaseClient();
-  const ticket = await recupererTicket(client, id);
+  const [ticket, utilisateur] = await Promise.all([
+    recupererTicket(client, id),
+    recupererUtilisateurConnecte(client),
+  ]);
 
   // Un ticket invisible pour la RLS est introuvable, et non « interdit » : on ne
   // révèle pas son existence (même choix qu'en SV-003).
   if (!ticket) {
     notFound();
   }
+
+  // Ce que l'interface propose n'est qu'un reflet : la base reste seule juge,
+  // et peut refuser entre le rendu de la page et le clic.
+  const estConnecte = utilisateur !== null;
+  const estReclamant = utilisateur?.id === ticket.reclame_par;
+  const estPorteur = utilisateur?.id === ticket.projet?.proprietaire_id;
+  const peutReclamer = estConnecte && ticket.statut === 'ouvert';
+  const peutRelacher = estConnecte && ticket.statut === 'reclame' && (estReclamant || estPorteur);
 
   const conformite = evaluerDefinitionOfReady({
     contexte: ticket.contexte,
@@ -76,6 +89,14 @@ export default async function TicketDetailPage({ params }: PageProps<'/tickets/[
           </ul>
         </section>
       ) : null}
+
+      <ReclamationPanel
+        ticketId={ticket.id}
+        statut={ticket.statut}
+        nomReclamant={ticket.reclamant?.nom ?? null}
+        peutReclamer={peutReclamer}
+        peutRelacher={peutRelacher}
+      />
 
       <Section titre="Contexte" contenu={ticket.contexte} testId="ticket-contexte" />
       <Section
