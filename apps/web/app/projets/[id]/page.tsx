@@ -4,6 +4,9 @@ import type { Metadata } from 'next';
 import type { ProjetStatut } from '@schemavibe/shared-types';
 import { createServerSupabaseClient } from '../../../lib/supabase/server';
 import { recupererProjet } from '../../../features/projects/repository/projects-repository';
+import { recupererUtilisateurConnecte } from '../../../features/auth/repository/session-repository';
+import { listerTickets } from '../../../features/tickets/repository/tickets-repository';
+import { TicketCard } from '../../../features/tickets/components/ticket-card';
 
 const LIBELLES_STATUT: Record<ProjetStatut, string> = {
   brouillon: 'Brouillon',
@@ -23,13 +26,19 @@ export async function generateMetadata({ params }: PageProps<'/projets/[id]'>): 
 export default async function ProjectDetailPage({ params }: PageProps<'/projets/[id]'>) {
   const { id } = await params;
   const client = await createServerSupabaseClient();
-  const projet = await recupererProjet(client, id);
+  const [projet, utilisateur] = await Promise.all([
+    recupererProjet(client, id),
+    recupererUtilisateurConnecte(client),
+  ]);
 
   // Un projet en brouillon dont on n'est pas porteur est invisible pour la RLS :
   // il est donc introuvable, et non « interdit » — on ne révèle pas son existence.
   if (!projet) {
     notFound();
   }
+
+  const tickets = await listerTickets(client, { projet_id: id });
+  const estPorteur = utilisateur?.id === projet.proprietaire_id;
 
   const dateCreation = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' }).format(
     new Date(projet.cree_le),
@@ -66,9 +75,33 @@ export default async function ProjectDetailPage({ params }: PageProps<'/projets/
         </section>
       ) : null}
 
-      <section className="rounded-lg border border-dashed border-black/15 p-4 text-sm opacity-70 dark:border-white/20">
-        Les tickets, jalons et le pulse de ce projet arrivent avec les tickets SV-004, SV-007 et
-        SV-009.
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-medium">Tickets</h2>
+          {estPorteur ? (
+            <Link
+              href={`/projets/${id}/tickets/nouveau`}
+              data-testid="nouveau-ticket"
+              className="rounded-md bg-foreground px-3 py-1.5 text-sm text-background"
+            >
+              Nouveau ticket
+            </Link>
+          ) : null}
+        </div>
+
+        {tickets.length === 0 ? (
+          <p data-testid="projet-tickets-vide" className="text-sm opacity-70">
+            Aucun ticket sur ce projet pour le moment.
+          </p>
+        ) : (
+          <ul data-testid="projet-tickets" className="flex flex-col gap-3">
+            {tickets.map((ticket) => (
+              <li key={ticket.id}>
+                <TicketCard ticket={ticket} />
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </main>
   );
