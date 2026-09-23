@@ -79,6 +79,13 @@ export default async function ProjectDetailPage({ params }: PageProps<'/projets/
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-medium">Tickets</h2>
           <Link
+            href={`/projets/${id}/discussions`}
+            data-testid="lien-discussions"
+            className="text-sm opacity-70 hover:underline"
+          >
+            Discussions →
+          </Link>
+          <Link
             href={`/projets/${id}/jalons`}
             data-testid="lien-jalons"
             className="text-sm opacity-70 hover:underline"

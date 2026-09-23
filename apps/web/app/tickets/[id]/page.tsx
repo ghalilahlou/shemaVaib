@@ -15,6 +15,8 @@ import { LIBELLES_MOTIFS } from '../../../features/tickets/actions/ticket-action
 import { ReclamationPanel } from '../../../features/tickets/components/reclamation-panel';
 import { SubmissionPanel } from '../../../features/tickets/components/submission-panel';
 import { recupererUtilisateurConnecte } from '../../../features/auth/repository/session-repository';
+import { listerMessages } from '../../../features/messaging/repository/messages-repository';
+import { FilDiscussion } from '../../../features/messaging/components/fil-discussion';
 
 export async function generateMetadata({ params }: PageProps<'/tickets/[id]'>): Promise<Metadata> {
   const { id } = await params;
@@ -51,6 +53,7 @@ export default async function TicketDetailPage({ params }: PageProps<'/tickets/[
   const peutSoumettre = estConnecte && estReclamant && enCoursDeTravail;
 
   const soumissions = await listerSoumissions(client, ticket.id);
+  const messages = await listerMessages(client, { genre: 'ticket', id: ticket.id });
 
   const conformite = evaluerDefinitionOfReady({
     contexte: ticket.contexte,
@@ -148,6 +151,12 @@ export default async function TicketDetailPage({ params }: PageProps<'/tickets/[
           </ul>
         )}
       </section>
+      <FilDiscussion
+        contexte={{ genre: 'ticket', id: ticket.id }}
+        messagesInitiaux={messages}
+        peutEcrire={estConnecte}
+        titre="Discussion"
+      />
     </main>
   );
 }

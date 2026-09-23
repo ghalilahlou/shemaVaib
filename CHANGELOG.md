@@ -68,6 +68,10 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   bloqué) sont calculées à la lecture par la vue `jalons_avec_sante`, selon la définition
   opérationnelle de la section 11. Un jalon hérite de la visibilité de son projet.
 
+- **SV-010** — Messagerie : canal par projet et fil par ticket, mis à jour en direct. Un message
+  suit la visibilité de ce qui le porte ; tout utilisateur authentifié voyant la discussion peut y
+  écrire, et sous son seul nom. Un message envoyé ne peut être ni modifié ni supprimé.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
