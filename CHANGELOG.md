@@ -57,6 +57,12 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   Review-Refine, et l'historique survit au relâchement du ticket. La transition d'état sert de garde
   à l'insertion : aucune soumission ne peut être créée par qui ne tient pas le ticket.
 
+- **SV-007** — Dashboard pulse : une page d'activité par projet, listant les changements de statut
+  des tickets et les nouvelles soumissions du plus récent au plus ancien, mise à jour en direct par
+  un canal Supabase Realtime sans aucun sondage. La Row Level Security filtre la diffusion comme la
+  lecture : un visiteur anonyme ne reçoit rien d'un ticket ou d'un projet en brouillon, y compris
+  pour un événement survenu pendant qu'il regarde.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,

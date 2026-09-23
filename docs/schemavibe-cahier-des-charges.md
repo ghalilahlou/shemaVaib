@@ -395,6 +395,10 @@ schemavibe/
 
 **Transitions d'état concurrentes** — une fonction qui fait changer une ressource d'état porte la condition d'état attendu dans sa clause `where` (compare-and-swap), et non le seul identifiant. Deux appels simultanés ne peuvent alors pas aboutir tous les deux : le second réévalue sa condition sur la ligne déjà modifiée, ne touche aucune ligne, et reçoit une erreur explicite plutôt qu'un succès mensonger.
 
+**Abonnements temps réel** — le pattern en couches ci-dessus décrit une lecture ponctuelle ; un abonnement s'y ajoute sans le remplacer. La logique d'abonnement vit dans `realtime/` au sein de la feature, sous forme de hook client, et se limite à traduire les charges reçues en objets du domaine. Elle ne porte aucune règle métier : celles-ci restent dans la base et dans le repository, qui font seuls autorité. Le chargement initial, lui, passe par le repository comme n'importe quelle lecture, et produit exactement la même forme d'objet que l'abonnement — une donnée arrivée par le canal temps réel ne doit pas s'afficher autrement qu'une donnée arrivée par requête.
+
+**La Row Level Security s'applique aussi à la diffusion** — Realtime évalue les politiques de chaque abonné avant de lui pousser une ligne. Un filtre posé côté navigateur, sur un canal ou dans le code du hook, n'est donc qu'un confort d'affichage : jamais une barrière de confidentialité. Tout abonnement introduit doit s'accompagner d'un test vérifiant qu'un visiteur non autorisé ne reçoit rien — y compris pour un événement survenu pendant qu'il écoute, et pas seulement au chargement de la page.
+
 **Validation schema-first (Zod)** — chaque entité a un schéma Zod unique, partagé entre le formulaire client, la Server Action et le repository. Le nom du projet prend ici un sens concret : SchemaVibe applique le principe schema-first à son propre code, pas seulement à ses tickets.
 
 ---
@@ -428,6 +432,10 @@ claude plugin install supabase@claude-plugins-official
 ```
 En développement local (Supabase CLI), le serveur MCP est disponible sur `http://localhost:54321/mcp`. Une fois connecté, Claude Code peut inspecter le schéma, exécuter des migrations et interroger les tables directement en langage naturel.
 
+**Les charges Realtime portent des objets vides, jamais `null`** — quand une version de la ligne n'est pas disponible, `new` et `old` valent `{}` et non `null`. Un `charge.new ?? charge.old` retient donc l'objet vide, qui est truthy, et le code croit lire une ligne qui n'existe pas. Toute lecture d'une charge Realtime teste la présence de clés, pas la nullité.
+
+**`SUBSCRIBED` ne signifie pas « la réplication me suit »** — le statut signale que le canal est ouvert, pas que l'abonnement est pris en compte en amont. Une modification faite juste après peut n'atteindre personne. Tout code ou test qui dépend de recevoir un événement doit d'abord provoquer un changement volontairement visible et attendre son écho.
+
 **Attention à `supabase db query`** — cette commande exécute son SQL dans une transaction qui n'est pas validée : le DDL qu'on y lance (`create or replace function`, `alter table`...) semble réussir mais ne persiste pas. Elle sert à interroger la base, jamais à la modifier. Toute modification de schéma passe par une migration, y compris une modification temporaire de vérification.
 
 **Realtime :** le dashboard pulse (section 5.4) s'abonne aux canaux Supabase Realtime sur les tables `tickets` et `submissions` pour l'activité en temps réel, sans polling.
@@ -440,6 +448,8 @@ En développement local (Supabase CLI), le serveur MCP est disponible sur `http:
 - **Tests d'intégration** — fonctions du repository contre une instance Supabase locale (CLI Supabase, Docker)
 - **Tests end-to-end** (Playwright) — parcours complets : créer un projet → générer un backlog → réclamer un ticket → soumettre → fusionner
 - **Tests de contrat** pour le serveur MCP — le schéma d'entrée/sortie de chaque outil (`scan_repo`, `create_tickets`, `claim_ticket`, `submit_solution`) doit être vérifié automatiquement, puisque Claude Code en dépend directement
+
+**Un test négatif prouve d'abord qu'il pouvait voir** — affirmer qu'une donnée n'arrive pas ne vaut que si le canal, la requête ou l'abonnement était en mesure de la délivrer. Un tel test commence donc par constater qu'il reçoit bien ce qu'il a le droit de recevoir, puis seulement conclut à l'absence du reste. Sans cette précaution, il passe aussi bien quand la protection fonctionne que quand plus rien ne fonctionne du tout.
 
 **Preuve par la négative** — un test qui prétend couvrir un défaut de concurrence, de sécurité ou de garde-fou doit être vérifié en retirant temporairement la protection : s'il passe encore, il ne prouve rien. La vérification se fait sur une migration jetable, supprimée aussitôt, et son résultat est consigné dans la pull request du ticket.
 
@@ -557,7 +567,7 @@ Un ADR n'est jamais modifié après avoir été accepté : un changement de déc
 | SV-004 | CRUD Tickets | ✅ Terminé |
 | SV-005 | Réclamer un ticket | ✅ Terminé |
 | SV-006 | Soumission de solution | ✅ Terminé |
-| SV-007 | Dashboard pulse | ☐ À faire |
+| SV-007 | Dashboard pulse | ✅ Terminé |
 | SV-008 | Bibliothèque de patterns | ✅ Terminé |
 | SV-009 | Jalons et roadmap | ☐ À faire |
 | SV-010 | Messagerie | ☐ À faire |
@@ -625,3 +635,5 @@ Recherche menée sur des retours d'expérience Reddit (r/vibecoding, r/SaaS, r/C
 - **v0.7 (2026-09-23)** — Correction du type de `vibe_score` (section 9) : `string` → `numeric`, sur une échelle de 0 à 100 et `NULL` tant qu'aucun calcul n'a eu lieu. La section 16 décrit un score composite (rapidité + qualité + revue par les pairs) : le stocker en texte aurait faussé les tris et les leaderboards de la section 5.5. Appliqué par une migration corrective, sans modifier la migration initiale déjà jouée.
 - **v0.8 (2026-09-23)** — Précisions issues de SV-001 : la création du profil `public.users` est assurée par un trigger de base de données à l'inscription, et non par le code applicatif, afin qu'aucun des trois chemins d'entrée (formulaire, magic link, OAuth) ne puisse l'omettre. La confirmation d'adresse e-mail reste désactivée en environnement local et devra être activée sur le projet cloud avant toute mise en ligne. Le fournisseur GitHub est implémenté mais désactivé tant qu'une OAuth App n'est pas fournie.
 - **v0.9 (2026-09-23)** — Promotion en conventions permanentes de trois enseignements tirés de SV-005 : les mutations à colonnes restreintes passent par une fonction `security definer` dédiée et non par une politique `UPDATE` permissive, et les transitions d'état portent la condition d'état attendu dans leur clause `where` (section 18) ; un test de concurrence ou de garde-fou est vérifié par la négative, protection retirée (section 21) ; `supabase db query` n'est jamais utilisé pour modifier le schéma, son DDL n'étant pas validé (section 20).
+- **v0.10 (2026-09-24)** — Convention d'abonnement temps réel (section 18), posée à l'occasion de SV-007 : la logique d'abonnement vit dans `realtime/` au sein de la feature, sous forme de hook client sans règle métier, et produit la même forme d'objet que le chargement initial fait par le repository. La Row Level Security s'applique à la diffusion comme à la lecture : un filtre posé côté navigateur n'est qu'un confort d'affichage, et tout abonnement s'accompagne d'un test vérifiant qu'un visiteur non autorisé ne reçoit rien en cours d'écoute.
+- **v0.11 (2026-09-24)** — Deux enseignements de diagnostic tirés de SV-007 : les charges Realtime portent des objets vides et non `null`, et le statut `SUBSCRIBED` ne garantit pas que la réplication suive l'abonnement (section 20) ; un test négatif doit d'abord prouver qu'il était en mesure de voir ce qu'il déclare absent (section 21).
