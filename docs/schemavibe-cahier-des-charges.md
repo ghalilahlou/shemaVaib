@@ -196,7 +196,7 @@ erDiagram
         uuid id PK
         string nom
         int xp
-        string vibe_score
+        numeric vibe_score
     }
     PROJECTS {
         uuid id PK
@@ -607,4 +607,5 @@ Recherche menée sur des retours d'expérience Reddit (r/vibecoding, r/SaaS, r/C
 - **v0.3 (2026-09-16)** — Approfondissement technique complet : choix du langage (TypeScript de bout en bout, comparé à Python/FastAPI et Django), architecture en monorepo par feature avec pattern Repository, conventions de code, intégration Supabase (connexion MCP à Claude Code, migrations, Realtime), stratégie de test (Vitest, Playwright, tests de contrat MCP), et premier backlog concret de 12 tickets (SV-000 à SV-011) prêt à être soumis à Claude Code.
 - **v0.4 (2026-09-16)** — Directives sur la création des fichiers Markdown : liste fermée des fichiers autorisés (README, CHANGELOG, ADR, cahier des charges), gabarit ADR, règle explicite contre la prolifération de fichiers `.md` flottants (NOTES/TODO/README par ticket).
 - **v0.5 (2026-09-16)** — Ajout du protocole d'exécution pour Claude Code : tableau de suivi de progression du backlog de démarrage directement dans ce fichier (mécanisme de quadrillage tant que la base de données n'existe pas encore), règles strictes de séquencement, et bascule prévue vers un suivi en base une fois SV-004 terminé. Ajout de la génération automatique d'un résumé Markdown à chaque soumission (`submit_solution`), stocké en base (champ `resume_md`, section 9) plutôt que comme fichier séparé — cohérent avec la section 23. Correction d'un résidu de l'ancien nom (`/vibeforge` → `/schemavibe`) dans les commandes Claude Code.
+- **v0.7 (2026-09-23)** — Correction du type de `vibe_score` (section 9) : `string` → `numeric`, sur une échelle de 0 à 100 et `NULL` tant qu'aucun calcul n'a eu lieu. La section 16 décrit un score composite (rapidité + qualité + revue par les pairs) : le stocker en texte aurait faussé les tris et les leaderboards de la section 5.5. Appliqué par une migration corrective, sans modifier la migration initiale déjà jouée.
 - **v0.6 (2026-09-16)** — Veille Reddit/GitHub (section 25, nouvelle) : enseignements sur les failles de sécurité systémiques, le "fix-one-break-ten", les limites de tokens, la dérive architecturale, la crise de la distribution, et les agents autonomes existants (OpenHands, SWE-agent). Idées intégrées : pattern Regression Radius, Vibe Security Gate nommée, contributeurs mixtes humains/agents avec garde-fou d'exécution, signal de positionnement exploratoire, preuves de marché chiffrées supplémentaires en section 14.

@@ -17,3 +17,9 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   contexte d'un message, la cohérence jalon/projet et l'horodatage. Row Level Security activée sur
   toutes les tables. Schémas Zod partagés dans `packages/shared-types`, types TypeScript générés
   depuis la base, et harnais de test Vitest (unitaire et intégration).
+
+### Corrigé
+
+- **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
+  `NULL` tant qu'aucun calcul n'a eu lieu. Appliqué par une migration corrective ; la migration
+  initiale reste inchangée.
