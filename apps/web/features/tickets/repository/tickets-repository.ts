@@ -12,10 +12,13 @@ import type { TicketFormData, TicketListFilters } from '../schema';
  * le comportement de la RLS soit directement testable sous chaque identité.
  */
 
+/** Un pattern tel qu'il est affiché : nom, rattachement et principe (section 5.2). */
+export type PatternResume = Pick<Pattern, 'id' | 'nom' | 'categorie' | 'principe' | 'cas_usage'>;
+
 /** Un ticket accompagné de son projet et des patterns qui lui sont rattachés. */
 export interface TicketDetaille extends Ticket {
   projet: { id: string; nom: string; statut: string } | null;
-  patterns_suggeres: Pick<Pattern, 'id' | 'nom' | 'categorie'>[];
+  patterns_suggeres: PatternResume[];
 }
 
 // Littéraux d'un seul tenant, et non concaténés : PostgREST dérive le type du
@@ -25,7 +28,7 @@ const COLONNES_TICKET =
   'id, projet_id, jalon_id, reclame_par, titre, contexte, criteres_acceptation, critere_test, complexite, statut, source, priorite, score_confiance, reclame_le, cree_le, maj_le' as const;
 
 const COLONNES_DETAILLEES =
-  'id, projet_id, jalon_id, reclame_par, titre, contexte, criteres_acceptation, critere_test, complexite, statut, source, priorite, score_confiance, reclame_le, cree_le, maj_le, projet:projects!tickets_projet_id_fkey(id, nom, statut), liens:ticket_patterns(role, pattern:patterns(id, nom, categorie))' as const;
+  'id, projet_id, jalon_id, reclame_par, titre, contexte, criteres_acceptation, critere_test, complexite, statut, source, priorite, score_confiance, reclame_le, cree_le, maj_le, projet:projects!tickets_projet_id_fkey(id, nom, statut), liens:ticket_patterns(role, pattern:patterns(id, nom, categorie, principe, cas_usage))' as const;
 
 /** Erreur remontée quand Supabase refuse ou échoue sur une opération ticket. */
 export class TicketRepositoryError extends Error {
@@ -38,7 +41,7 @@ export class TicketRepositoryError extends Error {
 /** Forme brute rendue par PostgREST pour les liens ticket/pattern. */
 interface LienBrut {
   role: string;
-  pattern: Pick<Pattern, 'id' | 'nom' | 'categorie'> | null;
+  pattern: PatternResume | null;
 }
 
 function normaliser(ligne: Record<string, unknown>): TicketDetaille {
@@ -204,12 +207,10 @@ export async function supprimerTicket(client: SupabaseClient<Database>, id: stri
 }
 
 /** Liste la bibliothèque de patterns, pour alimenter le formulaire de création. */
-export async function listerPatterns(
-  client: SupabaseClient<Database>,
-): Promise<Pick<Pattern, 'id' | 'nom' | 'categorie'>[]> {
+export async function listerPatterns(client: SupabaseClient<Database>): Promise<PatternResume[]> {
   const { data, error } = await client
     .from('patterns')
-    .select('id, nom, categorie')
+    .select('id, nom, categorie, principe, cas_usage')
     .order('nom', { ascending: true });
 
   if (error) {

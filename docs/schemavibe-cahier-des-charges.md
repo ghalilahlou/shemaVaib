@@ -550,7 +550,7 @@ Un ADR n'est jamais modifié après avoir été accepté : un changement de déc
 | SV-005 | Réclamer un ticket | ☐ À faire |
 | SV-006 | Soumission de solution | ☐ À faire |
 | SV-007 | Dashboard pulse | ☐ À faire |
-| SV-008 | Bibliothèque de patterns | ☐ À faire |
+| SV-008 | Bibliothèque de patterns | ✅ Terminé |
 | SV-009 | Jalons et roadmap | ☐ À faire |
 | SV-010 | Messagerie | ☐ À faire |
 | SV-011 | Serveur MCP — scan_repo (v1) | ☐ À faire |
@@ -600,6 +600,12 @@ Recherche menée sur des retours d'expérience Reddit (r/vibecoding, r/SaaS, r/C
 
 ---
 
+## 26. Statut de synchronisation du document
+
+À partir de la v0.8, ce fichier — sa copie dans ce dépôt — est la seule source de vérité pour l'exécution du projet. Il n'existe plus de copie de référence externe à resynchroniser. Toute décision prise en dehors de Claude Code est transmise comme instruction explicite dans le prompt qui la concerne.
+
+---
+
 ## Journal des décisions
 
 - **v0.1 (2026-09-15)** — Consolidation initiale : concept général, proposition de valeur, fonctionnalités clés, bibliothèque de patterns, idées complémentaires, architecture d'intégration MCP, modèle de données, cycle de vie du ticket, méthodologie de roadmap, cadre éthique de découverte GitHub, faisabilité, roadmap MVP, et modèle de génération de backlog à partir d'une simple description.
@@ -607,5 +613,6 @@ Recherche menée sur des retours d'expérience Reddit (r/vibecoding, r/SaaS, r/C
 - **v0.3 (2026-09-16)** — Approfondissement technique complet : choix du langage (TypeScript de bout en bout, comparé à Python/FastAPI et Django), architecture en monorepo par feature avec pattern Repository, conventions de code, intégration Supabase (connexion MCP à Claude Code, migrations, Realtime), stratégie de test (Vitest, Playwright, tests de contrat MCP), et premier backlog concret de 12 tickets (SV-000 à SV-011) prêt à être soumis à Claude Code.
 - **v0.4 (2026-09-16)** — Directives sur la création des fichiers Markdown : liste fermée des fichiers autorisés (README, CHANGELOG, ADR, cahier des charges), gabarit ADR, règle explicite contre la prolifération de fichiers `.md` flottants (NOTES/TODO/README par ticket).
 - **v0.5 (2026-09-16)** — Ajout du protocole d'exécution pour Claude Code : tableau de suivi de progression du backlog de démarrage directement dans ce fichier (mécanisme de quadrillage tant que la base de données n'existe pas encore), règles strictes de séquencement, et bascule prévue vers un suivi en base une fois SV-004 terminé. Ajout de la génération automatique d'un résumé Markdown à chaque soumission (`submit_solution`), stocké en base (champ `resume_md`, section 9) plutôt que comme fichier séparé — cohérent avec la section 23. Correction d'un résidu de l'ancien nom (`/vibeforge` → `/schemavibe`) dans les commandes Claude Code.
-- **v0.7 (2026-09-23)** — Correction du type de `vibe_score` (section 9) : `string` → `numeric`, sur une échelle de 0 à 100 et `NULL` tant qu'aucun calcul n'a eu lieu. La section 16 décrit un score composite (rapidité + qualité + revue par les pairs) : le stocker en texte aurait faussé les tris et les leaderboards de la section 5.5. Appliqué par une migration corrective, sans modifier la migration initiale déjà jouée.
 - **v0.6 (2026-09-16)** — Veille Reddit/GitHub (section 25, nouvelle) : enseignements sur les failles de sécurité systémiques, le "fix-one-break-ten", les limites de tokens, la dérive architecturale, la crise de la distribution, et les agents autonomes existants (OpenHands, SWE-agent). Idées intégrées : pattern Regression Radius, Vibe Security Gate nommée, contributeurs mixtes humains/agents avec garde-fou d'exécution, signal de positionnement exploratoire, preuves de marché chiffrées supplémentaires en section 14.
+- **v0.7 (2026-09-23)** — Correction du type de `vibe_score` (section 9) : `string` → `numeric`, sur une échelle de 0 à 100 et `NULL` tant qu'aucun calcul n'a eu lieu. La section 16 décrit un score composite (rapidité + qualité + revue par les pairs) : le stocker en texte aurait faussé les tris et les leaderboards de la section 5.5. Appliqué par une migration corrective, sans modifier la migration initiale déjà jouée.
+- **v0.8 (2026-09-23)** — Précisions issues de SV-001 : la création du profil `public.users` est assurée par un trigger de base de données à l'inscription, et non par le code applicatif, afin qu'aucun des trois chemins d'entrée (formulaire, magic link, OAuth) ne puisse l'omettre. La confirmation d'adresse e-mail reste désactivée en environnement local et devra être activée sur le projet cloud avant toute mise en ligne. Le fournisseur GitHub est implémenté mais désactivé tant qu'une OAuth App n'est pas fournie.

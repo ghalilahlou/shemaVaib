@@ -14,9 +14,14 @@ import type { Database } from '../lib/supabase/database.types';
 const MOT_DE_PASSE = 'MotDePasseDeTest12345';
 
 let admin: SupabaseClient<Database>;
-let patternNom: string;
-let patternId: string;
 const comptes: string[] = [];
+
+/**
+ * Pattern choisi dans la bibliothèque posée par la migration de SV-008. Le test
+ * n'en crée aucun : c'est précisément ce qu'il doit démontrer — une base fraîche
+ * suffit désormais à satisfaire la Definition of Ready.
+ */
+const PATTERN_NOM = 'Spec-First';
 
 function adresseUnique(prefixe: string): string {
   return `${prefixe}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}@schemavibe.test`;
@@ -33,22 +38,9 @@ test.beforeAll(async () => {
   admin = createClient<Database>(url, cle, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-
-  // La bibliothèque de patterns est peuplée au ticket SV-008 ; en attendant, le
-  // test crée le sien, sans quoi aucun ticket ne pourrait satisfaire la
-  // Definition of Ready.
-  patternNom = `Spec-First e2e ${Date.now().toString(36)}`;
-  const { data } = await admin
-    .from('patterns')
-    .insert({ nom: patternNom, categorie: 'planification' })
-    .select('id')
-    .single();
-  patternId = data!.id;
 });
 
 test.afterAll(async () => {
-  await admin.from('patterns').delete().eq('id', patternId);
-
   for (const id of comptes) {
     await admin.auth.admin.deleteUser(id);
   }
@@ -109,7 +101,9 @@ test('parcours complet : brouillon refusé à la publication, puis ticket publi�
 
   // Seconde tentative : la Definition of Ready est réunie.
   await page.getByLabel('Titre').fill(titre);
-  await page.getByLabel('Contexte').fill('La liste des tickets ne se filtre pas par statut.');
+  await page
+    .getByLabel('Contexte', { exact: true })
+    .fill('La liste des tickets ne se filtre pas par statut.');
   await page
     .getByLabel('Critères d’acceptation')
     .fill('Un filtre par statut existe et conserve la sélection.');
@@ -117,7 +111,7 @@ test('parcours complet : brouillon refusé à la publication, puis ticket publi�
     .getByLabel('Critère de test')
     .fill('Test e2e : filtrer sur « ouvert » ne laisse que des tickets ouverts.');
   await page.getByLabel('Complexité').selectOption('S');
-  await page.getByLabel(patternNom, { exact: false }).check();
+  await page.getByLabel(PATTERN_NOM, { exact: false }).check();
   await page.getByLabel('Publier le ticket', { exact: false }).check();
   await page.getByRole('button', { name: 'Enregistrer le ticket' }).click();
 
@@ -127,7 +121,7 @@ test('parcours complet : brouillon refusé à la publication, puis ticket publi�
   await page.getByRole('link', { name: 'Le consulter' }).click();
   await expect(page.getByRole('heading', { name: titre, level: 1 })).toBeVisible();
   await expect(page.getByTestId('ticket-statut')).toHaveText('Ouvert');
-  await expect(page.getByTestId('ticket-patterns')).toContainText(patternNom);
+  await expect(page.getByTestId('ticket-patterns')).toContainText(PATTERN_NOM);
 
   await page.context().clearCookies();
   await page.goto('/tickets?statut=ouvert');
@@ -166,11 +160,11 @@ test('la liste des tickets se filtre par statut et par projet', async ({ page })
 
   await page.goto(`/projets/${projetId}/tickets/nouveau`);
   await page.getByLabel('Titre').fill(titre);
-  await page.getByLabel('Contexte').fill('Un contexte suffisant.');
+  await page.getByLabel('Contexte', { exact: true }).fill('Un contexte suffisant.');
   await page.getByLabel('Critères d’acceptation').fill('Des critères explicites.');
   await page.getByLabel('Critère de test').fill('Un critère de test explicite.');
   await page.getByLabel('Complexité').selectOption('M');
-  await page.getByLabel(patternNom, { exact: false }).check();
+  await page.getByLabel(PATTERN_NOM, { exact: false }).check();
   await page.getByLabel('Publier le ticket', { exact: false }).check();
   await page.getByRole('button', { name: 'Enregistrer le ticket' }).click();
   await expect(page.getByTestId('ticket-succes')).toBeVisible();

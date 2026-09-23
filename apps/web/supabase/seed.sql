@@ -1,5 +1,9 @@
--- Données de départ de la base SchemaVibe.
+-- Données de départ de la base SchemaVibe, chargées par `supabase db reset`
+-- (voir [db.seed] dans config.toml).
 --
--- Chargé automatiquement par `supabase db reset` (voir [db.seed] dans config.toml).
--- Les 8 patterns de la section 5.2 du cahier des charges y seront insérés au
--- ticket SV-008, une fois le schéma initial en place (SV-002).
+-- La bibliothèque de patterns (section 5.2) n'est volontairement pas ici : elle
+-- est posée par la migration `20260923220000_bibliotheque_de_patterns.sql`. Un
+-- fichier de seed n'atteint que l'environnement local, or la Definition of Ready
+-- dépend de ce référentiel dans tous les environnements.
+--
+-- Ce fichier reste réservé aux données de confort propres au développement.

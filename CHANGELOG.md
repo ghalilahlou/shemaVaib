@@ -39,6 +39,12 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   brouillon ; c'est la demande de publication qui échoue, en énumérant ce qui manque. Politiques
   RLS : un ticket hérite de la visibilité de son projet, et seul le porteur le crée ou le modifie.
 
+- **SV-008** — Bibliothèque de patterns : les 8 patterns de la section 5.2 (nom, catégorie,
+  principe, cas d'usage) sont posés par une migration idempotente plutôt que par `seed.sql`, afin
+  d'exister dans tous les environnements et non seulement en local. Ils sont proposés à la
+  sélection dans le formulaire de ticket, principe affiché sous chacun, et détaillés sur la page
+  du ticket. Une base fraîche permet désormais de publier un ticket sans préparation préalable.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
