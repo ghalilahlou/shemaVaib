@@ -546,7 +546,7 @@ Un ADR n'est jamais modifié après avoir été accepté : un changement de déc
 | SV-001 | Authentification | ✅ Terminé |
 | SV-002 | Schéma de données initial | ✅ Terminé |
 | SV-003 | CRUD Projets | ✅ Terminé |
-| SV-004 | CRUD Tickets | ☐ À faire |
+| SV-004 | CRUD Tickets | ✅ Terminé |
 | SV-005 | Réclamer un ticket | ☐ À faire |
 | SV-006 | Soumission de solution | ☐ À faire |
 | SV-007 | Dashboard pulse | ☐ À faire |

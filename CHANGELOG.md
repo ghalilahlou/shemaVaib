@@ -33,6 +33,12 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   et chiffre, messages d'erreur identiques que le compte existe ou non, et redirection de callback
   restreinte aux chemins internes.
 
+- **SV-004** — CRUD Tickets : création, liste filtrable par statut et par projet, page de détail.
+  La Definition of Ready (section 5.1) est arbitrée par `evaluerDefinitionOfReady`, unique écriture
+  de la règle, et adossée à une contrainte Postgres. Un ticket incomplet s'enregistre en
+  brouillon ; c'est la demande de publication qui échoue, en énumérant ce qui manque. Politiques
+  RLS : un ticket hérite de la visibilité de son projet, et seul le porteur le crée ou le modifie.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
