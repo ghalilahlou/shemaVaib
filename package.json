@@ -7,10 +7,11 @@
     "node": ">=22.0.0"
   },
   "scripts": {
+    "build:deps": "pnpm --filter \"./packages/*\" run build",
     "build": "pnpm -r --filter \"./apps/*\" --filter \"./packages/*\" run build",
     "lint": "pnpm -r run lint",
-    "typecheck": "pnpm -r run typecheck",
-    "test": "pnpm -r run test",
+    "typecheck": "pnpm run build:deps && pnpm -r run typecheck",
+    "test": "pnpm run build:deps && pnpm -r run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "supabase": "pnpm --filter @schemavibe/web exec supabase"

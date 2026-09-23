@@ -38,6 +38,20 @@ pnpm lint
 pnpm typecheck
 ```
 
+## Tests
+
+Les tests d'intégration et end-to-end tournent contre l'instance Supabase locale : `pnpm db:start`
+doit être en route.
+
+```bash
+pnpm test        # unitaires et intégration (Vitest)
+pnpm test:e2e    # parcours end-to-end (Playwright)
+pnpm test:e2e:ui # les mêmes, en mode interactif
+```
+
+Au premier lancement des tests end-to-end, installer le navigateur :
+`pnpm exec playwright install chromium`.
+
 ## Organisation
 
 ```

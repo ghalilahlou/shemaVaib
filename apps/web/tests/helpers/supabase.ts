@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../lib/supabase/database.types.js';
+import type { Database } from '../../lib/supabase/database.types';
 
 /**
  * Clients Supabase pour les tests d'intégration.
@@ -42,6 +42,15 @@ export function creerClientAnonyme(): SupabaseClient<Database> {
 }
 
 /**
+ * Mot de passe commun aux utilisateurs de test. Il ne protège rien : ces comptes
+ * n'existent que le temps d'un `vitest run` sur une base locale jetable.
+ */
+const MOT_DE_PASSE_DE_TEST = 'MotDePasseDeTest12345';
+
+/** Adresses des comptes de test, pour pouvoir ouvrir une session ensuite. */
+const emailsParUtilisateur = new Map<string, string>();
+
+/**
  * Crée un utilisateur complet — entrée `auth.users` et profil `public.users` —
  * et rend son identifiant. Les tests s'en servent comme propriétaire de projet.
  */
@@ -49,10 +58,10 @@ export async function creerUtilisateurDeTest(
   admin: SupabaseClient<Database>,
   nom: string,
 ): Promise<string> {
-  const suffixe = crypto.randomUUID();
+  const email = `test-${crypto.randomUUID()}@schemavibe.test`;
   const { data, error } = await admin.auth.admin.createUser({
-    email: `test-${suffixe}@schemavibe.test`,
-    password: `mdp-${suffixe}`,
+    email,
+    password: MOT_DE_PASSE_DE_TEST,
     email_confirm: true,
   });
 
@@ -68,7 +77,34 @@ export async function creerUtilisateurDeTest(
     throw new Error(`Création du profil de test impossible : ${erreurProfil.message}`);
   }
 
+  emailsParUtilisateur.set(data.user.id, email);
+
   return data.user.id;
+}
+
+/**
+ * Client authentifié comme l'utilisateur indiqué : soumis à la RLS avec ses
+ * droits réels. C'est ce qui permet de vérifier que le porteur voit ses
+ * brouillons et qu'un tiers ne les voit pas.
+ */
+export async function creerClientConnecte(userId: string): Promise<SupabaseClient<Database>> {
+  const email = emailsParUtilisateur.get(userId);
+
+  if (!email) {
+    throw new Error(`Aucun utilisateur de test connu pour l’identifiant ${userId}.`);
+  }
+
+  const client = creerClientAnonyme();
+  const { error } = await client.auth.signInWithPassword({
+    email,
+    password: MOT_DE_PASSE_DE_TEST,
+  });
+
+  if (error) {
+    throw new Error(`Ouverture de session impossible : ${error.message}`);
+  }
+
+  return client;
 }
 
 /** Supprime un utilisateur de test ; le profil et ses projets tombent en cascade. */

@@ -36,3 +36,9 @@ pnpm-debug.log*
 
 # Types générés par Next.js
 apps/web/next-env.d.ts
+
+# Playwright
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/blob-report/
+apps/web/.playwright/

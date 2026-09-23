@@ -339,7 +339,7 @@ export type Database = {
           id: string
           maj_le: string
           nom: string
-          vibe_score: string | null
+          vibe_score: number | null
           xp: number
         }
         Insert: {
@@ -347,7 +347,7 @@ export type Database = {
           id: string
           maj_le?: string
           nom: string
-          vibe_score?: string | null
+          vibe_score?: number | null
           xp?: number
         }
         Update: {
@@ -355,7 +355,7 @@ export type Database = {
           id?: string
           maj_le?: string
           nom?: string
-          vibe_score?: string | null
+          vibe_score?: number | null
           xp?: number
         }
         Relationships: []

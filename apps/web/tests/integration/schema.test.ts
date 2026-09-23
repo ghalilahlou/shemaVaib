@@ -1,12 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../lib/supabase/database.types.js';
+import type { Database } from '../../lib/supabase/database.types';
 import {
   creerClientAdmin,
   creerClientAnonyme,
   creerUtilisateurDeTest,
   supprimerUtilisateurDeTest,
-} from '../helpers/supabase.js';
+} from '../helpers/supabase';
 
 /**
  * SV-002 — tests d'intégration du schéma initial, contre l'instance Supabase
@@ -66,8 +66,16 @@ describe('les 7 entités de la section 9 existent', () => {
   });
 });
 
+/**
+ * Trois tables sont volontairement lisibles sans être connecté :
+ * `patterns`, référentiel public dès la migration initiale, puis `users` et
+ * `projects`, ouverts par SV-003 — un profil est public par construction
+ * (section 9) et un projet vivant doit être visible (section 5.4).
+ */
+const TABLES_PUBLIQUES = ['patterns', 'users', 'projects'] as const;
+
 describe('Row Level Security', () => {
-  it.each(TABLES.filter((table) => table !== 'patterns'))(
+  it.each(TABLES.filter((table) => !(TABLES_PUBLIQUES as readonly string[]).includes(table)))(
     'la table %s n’expose rien à un client anonyme',
     async (table) => {
       const { data, error } = await anonyme.from(table).select('*');
@@ -81,6 +89,23 @@ describe('Row Level Security', () => {
     const { error } = await anonyme.from('patterns').select('*');
 
     expect(error).toBeNull();
+  });
+
+  it('les profils publics sont lisibles sans être connecté', async () => {
+    const { data, error } = await anonyme.from('users').select('id, nom, xp, vibe_score');
+
+    expect(error).toBeNull();
+    expect(data?.length).toBeGreaterThan(0);
+  });
+
+  it('un client anonyme ne peut pas modifier un profil', async () => {
+    const { data } = await anonyme
+      .from('users')
+      .update({ nom: 'Nom détourné' })
+      .eq('id', proprietaireId)
+      .select('id');
+
+    expect(data ?? []).toEqual([]);
   });
 
   it('un client anonyme ne peut pas créer de projet', async () => {
