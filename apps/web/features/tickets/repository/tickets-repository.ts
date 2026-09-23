@@ -17,7 +17,8 @@ export type PatternResume = Pick<Pattern, 'id' | 'nom' | 'categorie' | 'principe
 
 /** Un ticket accompagné de son projet et des patterns qui lui sont rattachés. */
 export interface TicketDetaille extends Ticket {
-  projet: { id: string; nom: string; statut: string } | null;
+  projet: { id: string; nom: string; statut: string; proprietaire_id: string } | null;
+  reclamant: { id: string; nom: string } | null;
   patterns_suggeres: PatternResume[];
 }
 
@@ -28,7 +29,7 @@ const COLONNES_TICKET =
   'id, projet_id, jalon_id, reclame_par, titre, contexte, criteres_acceptation, critere_test, complexite, statut, source, priorite, score_confiance, reclame_le, cree_le, maj_le' as const;
 
 const COLONNES_DETAILLEES =
-  'id, projet_id, jalon_id, reclame_par, titre, contexte, criteres_acceptation, critere_test, complexite, statut, source, priorite, score_confiance, reclame_le, cree_le, maj_le, projet:projects!tickets_projet_id_fkey(id, nom, statut), liens:ticket_patterns(role, pattern:patterns(id, nom, categorie, principe, cas_usage))' as const;
+  'id, projet_id, jalon_id, reclame_par, titre, contexte, criteres_acceptation, critere_test, complexite, statut, source, priorite, score_confiance, reclame_le, cree_le, maj_le, projet:projects!tickets_projet_id_fkey(id, nom, statut, proprietaire_id), reclamant:users!tickets_reclame_par_fkey(id, nom), liens:ticket_patterns(role, pattern:patterns(id, nom, categorie, principe, cas_usage))' as const;
 
 /** Erreur remontée quand Supabase refuse ou échoue sur une opération ticket. */
 export class TicketRepositoryError extends Error {
@@ -50,6 +51,7 @@ function normaliser(ligne: Record<string, unknown>): TicketDetaille {
   return {
     ...(reste as unknown as Ticket),
     projet: (ligne.projet as TicketDetaille['projet']) ?? null,
+    reclamant: (ligne.reclamant as TicketDetaille['reclamant']) ?? null,
     patterns_suggeres: (liens ?? [])
       .filter((lien) => lien.role === 'suggere' && lien.pattern !== null)
       .map((lien) => lien.pattern!),
@@ -204,6 +206,71 @@ export async function supprimerTicket(client: SupabaseClient<Database>, id: stri
   if (error) {
     throw new TicketRepositoryError('Impossible de supprimer le ticket.', error);
   }
+}
+
+/**
+ * Erreur métier d'une réclamation refusée, distincte d'une panne technique.
+ *
+ * C'est ce qui permet à l'appelant de dire « quelqu'un vous a devancé » plutôt
+ * que « une erreur est survenue » — la différence compte quand deux
+ * contributeurs réclament le même ticket au même instant.
+ */
+export class TicketReclamationError extends Error {
+  constructor(
+    readonly motif: 'non_reclamable' | 'non_relachable' | 'authentification_requise',
+    message: string,
+    cause?: unknown,
+  ) {
+    super(message, { cause });
+    this.name = 'TicketReclamationError';
+  }
+}
+
+/**
+ * Réclame un ticket ouvert pour l'utilisateur de la session.
+ *
+ * Passe par la fonction `reclamer_ticket` plutôt que par un `update` : la
+ * condition d'état y est atomique, et une politique RLS ne saurait pas empêcher
+ * un contributeur de modifier d'autres colonnes au passage. Voir la migration
+ * `20260924000000_reclamer_un_ticket.sql`.
+ */
+export async function reclamerTicket(
+  client: SupabaseClient<Database>,
+  ticketId: string,
+): Promise<Ticket> {
+  const { data, error } = await client.rpc('reclamer_ticket', { ticket: ticketId });
+
+  if (error) {
+    throw new TicketReclamationError(
+      error.message.includes('authentification_requise')
+        ? 'authentification_requise'
+        : 'non_reclamable',
+      'Ce ticket ne peut pas être réclamé.',
+      error,
+    );
+  }
+
+  return data as unknown as Ticket;
+}
+
+/** Relâche un ticket réclamé, par son réclamant ou par le porteur du projet. */
+export async function relacherTicket(
+  client: SupabaseClient<Database>,
+  ticketId: string,
+): Promise<Ticket> {
+  const { data, error } = await client.rpc('relacher_ticket', { ticket: ticketId });
+
+  if (error) {
+    throw new TicketReclamationError(
+      error.message.includes('authentification_requise')
+        ? 'authentification_requise'
+        : 'non_relachable',
+      'Ce ticket ne peut pas être relâché.',
+      error,
+    );
+  }
+
+  return data as unknown as Ticket;
 }
 
 /** Liste la bibliothèque de patterns, pour alimenter le formulaire de création. */

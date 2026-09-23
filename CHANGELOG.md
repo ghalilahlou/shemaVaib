@@ -45,6 +45,12 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   sélection dans le formulaire de ticket, principe affiché sous chacun, et détaillés sur la page
   du ticket. Une base fraîche permet désormais de publier un ticket sans préparation préalable.
 
+- **SV-005** — Réclamer un ticket : un ticket publié peut être réclamé par un utilisateur
+  authentifié, puis relâché par son réclamant ou par le porteur du projet. La réclamation passe
+  par une fonction de base de données en compare-and-swap plutôt que par un `UPDATE` : deux
+  réclamations simultanées ne laissent passer que la première, et réclamer ne donne aucun droit
+  de modification sur le ticket.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
