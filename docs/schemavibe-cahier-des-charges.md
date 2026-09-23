@@ -543,7 +543,7 @@ Un ADR n'est jamais modifié après avoir été accepté : un changement de déc
 | ID | Titre | Statut |
 |---|---|---|
 | SV-000 | Initialisation du projet | ✅ Terminé |
-| SV-001 | Authentification | ☐ À faire |
+| SV-001 | Authentification | ✅ Terminé |
 | SV-002 | Schéma de données initial | ✅ Terminé |
 | SV-003 | CRUD Projets | ✅ Terminé |
 | SV-004 | CRUD Tickets | ☐ À faire |

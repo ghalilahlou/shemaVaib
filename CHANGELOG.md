@@ -25,6 +25,14 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   Supabase de session et d'administration dans `lib/supabase/`. Tests d'intégration du repository
   sous trois identités (anonyme, porteur, tiers) et parcours end-to-end Playwright.
 
+- **SV-001** — Authentification : inscription et connexion par e-mail et mot de passe, lien de
+  connexion à usage unique (magic link) et bouton GitHub. Le profil `public.users` est créé par un
+  trigger à l'inscription, quel que soit le chemin emprunté. Session rafraîchie par la couche
+  `proxy`, en-tête affichant l'état de connexion, et redirection du formulaire de projet vers la
+  page de connexion. Garde-fous : mot de passe d'au moins 12 caractères avec minuscule, majuscule
+  et chiffre, messages d'erreur identiques que le compte existe ou non, et redirection de callback
+  restreinte aux chemins internes.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
