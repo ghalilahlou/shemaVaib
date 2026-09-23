@@ -68,7 +68,6 @@ export type Database = {
           id: string
           maj_le: string
           projet_id: string
-          sante: Database["public"]["Enums"]["jalon_sante"]
           theme: string
         }
         Insert: {
@@ -77,7 +76,6 @@ export type Database = {
           id?: string
           maj_le?: string
           projet_id: string
-          sante?: Database["public"]["Enums"]["jalon_sante"]
           theme: string
         }
         Update: {
@@ -86,7 +84,6 @@ export type Database = {
           id?: string
           maj_le?: string
           projet_id?: string
-          sante?: Database["public"]["Enums"]["jalon_sante"]
           theme?: string
         }
         Relationships: [
@@ -218,6 +215,39 @@ export type Database = {
           },
         ]
       }
+      ticket_dependencies: {
+        Row: {
+          bloque_par_id: string
+          cree_le: string
+          ticket_id: string
+        }
+        Insert: {
+          bloque_par_id: string
+          cree_le?: string
+          ticket_id: string
+        }
+        Update: {
+          bloque_par_id?: string
+          cree_le?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_dependencies_bloque_par_id_fkey"
+            columns: ["bloque_par_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_dependencies_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ticket_patterns: {
         Row: {
           cree_le: string
@@ -314,6 +344,13 @@ export type Database = {
             foreignKeyName: "tickets_jalon_id_fkey"
             columns: ["jalon_id"]
             isOneToOne: false
+            referencedRelation: "jalons_avec_sante"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_jalon_id_fkey"
+            columns: ["jalon_id"]
+            isOneToOne: false
             referencedRelation: "milestones"
             referencedColumns: ["id"]
           },
@@ -362,7 +399,31 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      jalons_avec_sante: {
+        Row: {
+          cree_le: string | null
+          date_cible: string | null
+          id: string | null
+          jours_inactivite: number | null
+          maj_le: string | null
+          progression: number | null
+          projet_id: string | null
+          sante: Database["public"]["Enums"]["jalon_sante"] | null
+          theme: string | null
+          tickets_acheves: number | null
+          tickets_restants: number | null
+          tickets_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestones_projet_id_fkey"
+            columns: ["projet_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       est_proprietaire_du_projet: { Args: { projet: string }; Returns: boolean }
