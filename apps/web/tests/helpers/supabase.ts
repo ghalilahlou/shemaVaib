@@ -1,0 +1,80 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '../../lib/supabase/database.types.js';
+
+/**
+ * Clients Supabase pour les tests d'intégration.
+ *
+ * Volontairement distincts de `lib/supabase/admin.ts` : celui-ci importe
+ * `server-only`, qui lève une erreur hors du runtime Next.js. Le harnais de
+ * test a donc sa propre fabrique, ce qui garde le garde-fou intact côté
+ * application.
+ */
+
+function lireVariable(nom: string): string {
+  const valeur = process.env[nom];
+
+  if (!valeur) {
+    throw new Error(
+      `${nom} est absent. Lancer \`pnpm db:start\` puis reporter les valeurs de ` +
+        '`pnpm db:status` dans apps/web/.env.local.',
+    );
+  }
+
+  return valeur;
+}
+
+/** Client à privilèges élevés : contourne la RLS, sert à préparer les données. */
+export function creerClientAdmin(): SupabaseClient<Database> {
+  return createClient<Database>(
+    lireVariable('NEXT_PUBLIC_SUPABASE_URL'),
+    lireVariable('SUPABASE_SERVICE_ROLE_KEY'),
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  );
+}
+
+/** Client anonyme : soumis à la RLS, sert à vérifier ce qui est réellement exposé. */
+export function creerClientAnonyme(): SupabaseClient<Database> {
+  return createClient<Database>(
+    lireVariable('NEXT_PUBLIC_SUPABASE_URL'),
+    lireVariable('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  );
+}
+
+/**
+ * Crée un utilisateur complet — entrée `auth.users` et profil `public.users` —
+ * et rend son identifiant. Les tests s'en servent comme propriétaire de projet.
+ */
+export async function creerUtilisateurDeTest(
+  admin: SupabaseClient<Database>,
+  nom: string,
+): Promise<string> {
+  const suffixe = crypto.randomUUID();
+  const { data, error } = await admin.auth.admin.createUser({
+    email: `test-${suffixe}@schemavibe.test`,
+    password: `mdp-${suffixe}`,
+    email_confirm: true,
+  });
+
+  if (error || !data.user) {
+    throw new Error(
+      `Création de l’utilisateur de test impossible : ${error?.message ?? 'inconnu'}`,
+    );
+  }
+
+  const { error: erreurProfil } = await admin.from('users').insert({ id: data.user.id, nom });
+
+  if (erreurProfil) {
+    throw new Error(`Création du profil de test impossible : ${erreurProfil.message}`);
+  }
+
+  return data.user.id;
+}
+
+/** Supprime un utilisateur de test ; le profil et ses projets tombent en cascade. */
+export async function supprimerUtilisateurDeTest(
+  admin: SupabaseClient<Database>,
+  userId: string,
+): Promise<void> {
+  await admin.auth.admin.deleteUser(userId);
+}

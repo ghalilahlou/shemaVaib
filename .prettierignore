@@ -10,3 +10,6 @@ apps/web/next-env.d.ts
 
 # Document vivant : sa mise en forme fait foi telle quelle, Prettier n'y touche pas.
 docs/schemavibe-cahier-des-charges.md
+
+# Types générés par `supabase gen types`
+apps/web/lib/supabase/database.types.ts
