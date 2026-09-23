@@ -78,6 +78,13 @@ export default async function ProjectDetailPage({ params }: PageProps<'/projets/
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-medium">Tickets</h2>
+          <Link
+            href={`/projets/${id}/pulse`}
+            data-testid="lien-pulse"
+            className="text-sm opacity-70 hover:underline"
+          >
+            Voir le pulse →
+          </Link>
           {estPorteur ? (
             <Link
               href={`/projets/${id}/tickets/nouveau`}

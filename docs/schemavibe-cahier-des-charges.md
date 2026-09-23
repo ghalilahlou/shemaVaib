@@ -395,6 +395,10 @@ schemavibe/
 
 **Transitions d'état concurrentes** — une fonction qui fait changer une ressource d'état porte la condition d'état attendu dans sa clause `where` (compare-and-swap), et non le seul identifiant. Deux appels simultanés ne peuvent alors pas aboutir tous les deux : le second réévalue sa condition sur la ligne déjà modifiée, ne touche aucune ligne, et reçoit une erreur explicite plutôt qu'un succès mensonger.
 
+**Abonnements temps réel** — le pattern en couches ci-dessus décrit une lecture ponctuelle ; un abonnement s'y ajoute sans le remplacer. La logique d'abonnement vit dans `realtime/` au sein de la feature, sous forme de hook client, et se limite à traduire les charges reçues en objets du domaine. Elle ne porte aucune règle métier : celles-ci restent dans la base et dans le repository, qui font seuls autorité. Le chargement initial, lui, passe par le repository comme n'importe quelle lecture, et produit exactement la même forme d'objet que l'abonnement — une donnée arrivée par le canal temps réel ne doit pas s'afficher autrement qu'une donnée arrivée par requête.
+
+**La Row Level Security s'applique aussi à la diffusion** — Realtime évalue les politiques de chaque abonné avant de lui pousser une ligne. Un filtre posé côté navigateur, sur un canal ou dans le code du hook, n'est donc qu'un confort d'affichage : jamais une barrière de confidentialité. Tout abonnement introduit doit s'accompagner d'un test vérifiant qu'un visiteur non autorisé ne reçoit rien — y compris pour un événement survenu pendant qu'il écoute, et pas seulement au chargement de la page.
+
 **Validation schema-first (Zod)** — chaque entité a un schéma Zod unique, partagé entre le formulaire client, la Server Action et le repository. Le nom du projet prend ici un sens concret : SchemaVibe applique le principe schema-first à son propre code, pas seulement à ses tickets.
 
 ---
@@ -557,7 +561,7 @@ Un ADR n'est jamais modifié après avoir été accepté : un changement de déc
 | SV-004 | CRUD Tickets | ✅ Terminé |
 | SV-005 | Réclamer un ticket | ✅ Terminé |
 | SV-006 | Soumission de solution | ✅ Terminé |
-| SV-007 | Dashboard pulse | ☐ À faire |
+| SV-007 | Dashboard pulse | ✅ Terminé |
 | SV-008 | Bibliothèque de patterns | ✅ Terminé |
 | SV-009 | Jalons et roadmap | ☐ À faire |
 | SV-010 | Messagerie | ☐ À faire |
@@ -625,3 +629,4 @@ Recherche menée sur des retours d'expérience Reddit (r/vibecoding, r/SaaS, r/C
 - **v0.7 (2026-09-23)** — Correction du type de `vibe_score` (section 9) : `string` → `numeric`, sur une échelle de 0 à 100 et `NULL` tant qu'aucun calcul n'a eu lieu. La section 16 décrit un score composite (rapidité + qualité + revue par les pairs) : le stocker en texte aurait faussé les tris et les leaderboards de la section 5.5. Appliqué par une migration corrective, sans modifier la migration initiale déjà jouée.
 - **v0.8 (2026-09-23)** — Précisions issues de SV-001 : la création du profil `public.users` est assurée par un trigger de base de données à l'inscription, et non par le code applicatif, afin qu'aucun des trois chemins d'entrée (formulaire, magic link, OAuth) ne puisse l'omettre. La confirmation d'adresse e-mail reste désactivée en environnement local et devra être activée sur le projet cloud avant toute mise en ligne. Le fournisseur GitHub est implémenté mais désactivé tant qu'une OAuth App n'est pas fournie.
 - **v0.9 (2026-09-23)** — Promotion en conventions permanentes de trois enseignements tirés de SV-005 : les mutations à colonnes restreintes passent par une fonction `security definer` dédiée et non par une politique `UPDATE` permissive, et les transitions d'état portent la condition d'état attendu dans leur clause `where` (section 18) ; un test de concurrence ou de garde-fou est vérifié par la négative, protection retirée (section 21) ; `supabase db query` n'est jamais utilisé pour modifier le schéma, son DDL n'étant pas validé (section 20).
+- **v0.10 (2026-09-24)** — Convention d'abonnement temps réel (section 18), posée à l'occasion de SV-007 : la logique d'abonnement vit dans `realtime/` au sein de la feature, sous forme de hook client sans règle métier, et produit la même forme d'objet que le chargement initial fait par le repository. La Row Level Security s'applique à la diffusion comme à la lecture : un filtre posé côté navigateur n'est qu'un confort d'affichage, et tout abonnement s'accompagne d'un test vérifiant qu'un visiteur non autorisé ne reçoit rien en cours d'écoute.
