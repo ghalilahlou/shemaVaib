@@ -77,6 +77,12 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   Commande Claude Code `/schemavibe scan`. Test de contrat contre des dépôts fixture et test de
   protocole à travers un client MCP réel.
 
+- **SV-012** — Import du backlog de démarrage dans la plateforme (section 24, règle 6) : un script
+  rejouable crée le projet SchemaVibe et y importe les douze tickets livrés, avec leur statut, leur
+  complexité, leur pattern suggéré et leurs dépendances, plus deux tickets candidats ouverts. Les
+  identifiants sont fixes : relancer l'import met à jour les mêmes lignes sans détacher ce qui leur
+  est rattaché.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,

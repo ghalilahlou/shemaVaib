@@ -38,6 +38,19 @@ pnpm lint
 pnpm typecheck
 ```
 
+## Importer le backlog dans la plateforme
+
+Le backlog de démarrage vit désormais dans la base, et non plus seulement dans le cahier des
+charges (section 24, règle 6). L'import vise l'instance désignée par `.env.local`.
+
+```bash
+pnpm import:backlog -- porteur@exemple.test
+```
+
+Le compte indiqué doit déjà exister — inscrivez-vous sur `/inscription` d'abord. Il devient
+propriétaire du projet. L'opération est rejouable : les identifiants des tickets sont fixes, un
+second import met à jour les mêmes lignes plutôt que d'en créer de nouvelles.
+
 ## Tests
 
 Les tests d'intégration et end-to-end tournent contre l'instance Supabase locale : `pnpm db:start`
