@@ -42,3 +42,7 @@ apps/web/test-results/
 apps/web/playwright-report/
 apps/web/blob-report/
 apps/web/.playwright/
+
+# Règles d'agent régénérées par Next.js à chaque build
+apps/web/AGENTS.md
+apps/web/CLAUDE.md

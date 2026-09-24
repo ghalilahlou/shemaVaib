@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "db:types": "supabase gen types typescript --local --schema public > lib/supabase/database.types.ts",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "import:backlog": "tsx scripts/importer-backlog.ts"
   },
   "dependencies": {
     "@schemavibe/shared-types": "workspace:*",
@@ -41,6 +42,7 @@
     "eslint-config-prettier": "10.1.8",
     "supabase": "2.117.0",
     "tailwindcss": "4.1.18",
+    "tsx": "4.23.15",
     "typescript": "5.9.3",
     "typescript-eslint": "8.70.1",
     "vitest": "5.0.1"
