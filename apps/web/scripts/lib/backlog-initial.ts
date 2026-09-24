@@ -1,7 +1,14 @@
 import type { TicketComplexite, TicketStatut } from '@schemavibe/shared-types';
 
 /**
- * Le backlog de démarrage, transcrit depuis la section 22 du cahier des charges.
+ * Le backlog de la plateforme, amorcé par la section 22 du cahier des charges.
+ *
+ * Les douze premiers tickets sont la transcription du backlog de démarrage. Les
+ * suivants sont ouverts ici et non dans le cahier des charges, conformément à la
+ * règle 6 de la section 24 : ce fichier est la source rejouable qui alimente la
+ * plateforme, et tant qu'aucune instance durable n'existe — le projet distant
+ * relève d'un chantier à venir — c'est le seul support qui survive à un
+ * `supabase db reset`.
  *
  * La section 24, règle 6, prévoyait qu'une fois la base en place, ce backlog
  * soit importé dans la plateforme et que le tableau de suivi du cahier des
@@ -236,7 +243,7 @@ export const BACKLOG_INITIAL: TicketDuBacklog[] = [
     critere_test:
       'Un test d’intégration importe deux fois de suite et constate que le nombre de tickets, de liens de pattern et de dépendances est inchangé, et que les identifiants n’ont pas bougé.',
     complexite: 'S',
-    statut: 'ouvert',
+    statut: 'fusionne',
     pattern: 'Spec-First',
     depend_de: ['SV-004'],
   },
@@ -253,6 +260,21 @@ export const BACKLOG_INITIAL: TicketDuBacklog[] = [
     complexite: 'S',
     statut: 'ouvert',
     pattern: 'Regression Radius',
+    depend_de: ['SV-011'],
+  },
+  {
+    id: identifiant(14),
+    reference: 'SV-014',
+    titre: 'SV-014 — Authentification du serveur MCP',
+    contexte:
+      'Les trois outils d’écriture de la section 8 — create_tickets, claim_ticket, submit_solution — doivent agir au nom de quelqu’un : toute l’autorisation de la plateforme repose sur la Row Level Security et sur auth.uid(). Confier une clé de service au serveur MCP contournerait d’un coup toutes les politiques écrites depuis SV-003 ; il lui faut donc une identité, et pas des privilèges.',
+    criteres_acceptation:
+      'Un jeton personnel est créé depuis la plateforme, montré une seule fois et conservé sous forme d’empreinte. Le serveur MCP l’échange contre une session courte portant l’identité de son émetteur, et n’obtient jamais plus de droits que cette personne. Le jeton est révocable, et sa révocation ferme l’accès.',
+    critere_test:
+      'Un jeton émis par une personne ouvre une session qui ne voit que ce que cette personne voit, puis, une fois révoqué, se voit refuser l’échange — la lecture réussie avant révocation prouvant que le refus n’est pas un faux négatif.',
+    complexite: 'M',
+    statut: 'ouvert',
+    pattern: 'Guardrail Prompting',
     depend_de: ['SV-011'],
   },
 ];

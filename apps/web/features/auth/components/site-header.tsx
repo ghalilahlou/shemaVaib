@@ -23,6 +23,9 @@ export function SiteHeader({ utilisateur }: { utilisateur: UtilisateurConnecte |
 
           {utilisateur ? (
             <>
+              <Link href="/parametres/jetons" className="opacity-70 hover:opacity-100">
+                Jetons
+              </Link>
               <span data-testid="session-utilisateur" className="opacity-70">
                 {utilisateur.profil?.nom ?? utilisateur.email}
               </span>
