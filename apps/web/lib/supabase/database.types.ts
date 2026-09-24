@@ -9,6 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      api_tokens: {
+        Row: {
+          cree_le: string
+          dernier_usage_le: string | null
+          empreinte: string
+          id: string
+          libelle: string
+          revoque_le: string | null
+          utilisateur_id: string
+        }
+        Insert: {
+          cree_le?: string
+          dernier_usage_le?: string | null
+          empreinte: string
+          id?: string
+          libelle: string
+          revoque_le?: string | null
+          utilisateur_id: string
+        }
+        Update: {
+          cree_le?: string
+          dernier_usage_le?: string | null
+          empreinte?: string
+          id?: string
+          libelle?: string
+          revoque_le?: string | null
+          utilisateur_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_tokens_utilisateur_id_fkey"
+            columns: ["utilisateur_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           auteur_id: string | null
@@ -426,6 +464,24 @@ export type Database = {
       }
     }
     Functions: {
+      creer_jeton_api: {
+        Args: { p_empreinte: string; p_libelle: string }
+        Returns: {
+          cree_le: string
+          dernier_usage_le: string | null
+          empreinte: string
+          id: string
+          libelle: string
+          revoque_le: string | null
+          utilisateur_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "api_tokens"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       est_proprietaire_du_projet: { Args: { projet: string }; Returns: boolean }
       projet_est_public: { Args: { projet: string }; Returns: boolean }
       reclamer_ticket: {
@@ -478,6 +534,24 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "tickets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      revoquer_jeton_api: {
+        Args: { p_jeton: string }
+        Returns: {
+          cree_le: string
+          dernier_usage_le: string | null
+          empreinte: string
+          id: string
+          libelle: string
+          revoque_le: string | null
+          utilisateur_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "api_tokens"
           isOneToOne: true
           isSetofReturn: false
         }

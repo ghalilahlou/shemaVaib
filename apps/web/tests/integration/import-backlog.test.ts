@@ -75,10 +75,10 @@ describe('contenu importé', () => {
     expect(tickets).toHaveLength(BACKLOG_INITIAL.length);
   });
 
-  it('marque les douze tickets du backlog de démarrage comme fusionnés', async () => {
+  it('marque comme fusionné tout ticket déjà livré', async () => {
     const livres = BACKLOG_INITIAL.filter((ticket) => ticket.statut === 'fusionne');
 
-    expect(livres).toHaveLength(12);
+    expect(livres).toHaveLength(13);
 
     for (const attendu of livres) {
       const ticket = await recupererTicket(admin, attendu.id);
@@ -89,7 +89,7 @@ describe('contenu importé', () => {
   it('laisse ouverts les tickets candidats', async () => {
     const ouverts = BACKLOG_INITIAL.filter((ticket) => ticket.statut === 'ouvert');
 
-    expect(ouverts.map((ticket) => ticket.reference)).toEqual(['SV-012', 'SV-013']);
+    expect(ouverts.map((ticket) => ticket.reference)).toEqual(['SV-013', 'SV-014']);
 
     for (const attendu of ouverts) {
       expect((await recupererTicket(admin, attendu.id))?.statut).toBe('ouvert');
