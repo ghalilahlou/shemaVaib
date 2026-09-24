@@ -72,6 +72,11 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   suit la visibilité de ce qui le porte ; tout utilisateur authentifié voyant la discussion peut y
   écrire, et sous son seul nom. Un message envoyé ne peut être ni modifié ni supprimé.
 
+- **SV-011** — Serveur MCP, outil `scan_repo` : analyse locale d'un dépôt (densité de commits
+  récents, présence de tests, TODO non résolus) rendue sous forme structurée, en lecture seule.
+  Commande Claude Code `/schemavibe scan`. Test de contrat contre des dépôts fixture et test de
+  protocole à travers un client MCP réel.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
