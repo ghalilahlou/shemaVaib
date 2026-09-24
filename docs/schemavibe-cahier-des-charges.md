@@ -395,6 +395,10 @@ schemavibe/
 
 **Transitions d'état concurrentes** — une fonction qui fait changer une ressource d'état porte la condition d'état attendu dans sa clause `where` (compare-and-swap), et non le seul identifiant. Deux appels simultanés ne peuvent alors pas aboutir tous les deux : le second réévalue sa condition sur la ligne déjà modifiée, ne touche aucune ligne, et reçoit une erreur explicite plutôt qu'un succès mensonger.
 
+**Composer les politiques RLS plutôt que les réécrire** — quand la visibilité d'une entité découle de celle d'une autre, la politique interroge la table dont elle dépend (`exists (select 1 from ...)`) au lieu de recopier ses conditions. La sous-requête étant elle-même soumise aux politiques de cette table, la règle dérivée suit automatiquement toute évolution de la règle d'origine. Recopier les conditions créerait un second endroit à maintenir, et le jour où l'un des deux change, la divergence passe inaperçue.
+
+**L'absence de politique est une protection, et se teste comme telle** — la Row Level Security refuse par défaut : ne pas écrire de politique `update` ou `delete` suffit à rendre une donnée immuable. Cette absence doit être couverte par un test qui tente l'opération et constate son échec, sans quoi rien ne distingue une interdiction voulue d'un oubli — et rien n'empêchera quelqu'un d'ajouter la politique manquante en croyant combler une lacune.
+
 **Abonnements temps réel** — le pattern en couches ci-dessus décrit une lecture ponctuelle ; un abonnement s'y ajoute sans le remplacer. La logique d'abonnement vit dans `realtime/` au sein de la feature, sous forme de hook client, et se limite à traduire les charges reçues en objets du domaine. Elle ne porte aucune règle métier : celles-ci restent dans la base et dans le repository, qui font seuls autorité. Le chargement initial, lui, passe par le repository comme n'importe quelle lecture, et produit exactement la même forme d'objet que l'abonnement — une donnée arrivée par le canal temps réel ne doit pas s'afficher autrement qu'une donnée arrivée par requête.
 
 **L'état d'un composant abonné ne recopie pas le chargement serveur** — le mettre dans un `useState` le fige au premier rendu : une revalidation ultérieure reste alors sans effet, et l'affichage ne dépend plus que de la diffusion, donc de rien tant que le canal n'est pas établi. L'état ne retient que ce qui arrive par le canal ; la liste affichée est recomposée au rendu à partir des deux sources, dédupliquée sur l'identifiant.
@@ -526,12 +530,15 @@ Les agents IA ont tendance à multiplier les fichiers `.md` au fil du travail (`
 | `CHANGELOG.md` | `/` | Historique des changements livrés | Une entrée à chaque ticket fusionné |
 | ADR (Architecture Decision Record) | `docs/adr/NNNN-titre-court.md` | Une décision technique structurante, avec son contexte et ses conséquences | Uniquement pour un choix difficile à revenir en arrière (ex. choix de Supabase, choix du pattern Repository) — jamais pour une décision mineure |
 | `docs/schemavibe-cahier-des-charges.md` | `docs/` | Le document vivant, déjà en place | Mis à jour en continu, jamais dupliqué |
+| Commande Claude Code | `.claude/commands/NNN.md` | Définir une commande `/…` exposée par le projet | Uniquement pour une commande que le cahier des charges prévoit explicitement (section 8) — jamais pour un raccourci de confort |
 
 ### Ce qui n'est jamais créé
 
 - Pas de `NOTES.md`, `TODO.md` ou fichier de brouillon flottant — ce qui doit être suivi va dans un ticket (base de données), pas dans un fichier à part
 - Pas de README par ticket ou par composant individuel — le contexte d'un ticket vit dans son enregistrement (section 9), pas dans un fichier séparé
 - Pas de duplication du contenu du cahier des charges ailleurs dans le repo
+
+Les fichiers de commande listés ci-dessus échappent à cette règle parce qu'ils sont de la **configuration, pas de la documentation** : ils ne décrivent rien, ils s'exécutent. La règle contre la prolifération de `.md` vise les fichiers que l'on écrit pour être lus ; ceux-là sont écrits pour être interprétés par l'outil.
 
 ### Gabarit ADR
 
@@ -575,7 +582,7 @@ Un ADR n'est jamais modifié après avoir été accepté : un changement de déc
 | SV-008 | Bibliothèque de patterns | ✅ Terminé |
 | SV-009 | Jalons et roadmap | ✅ Terminé |
 | SV-010 | Messagerie | ✅ Terminé |
-| SV-011 | Serveur MCP — scan_repo (v1) | ☐ À faire |
+| SV-011 | Serveur MCP — scan_repo (v1) | ✅ Terminé |
 
 Légende : ☐ À faire · 🔄 En cours · ✅ Terminé · 🚫 Bloqué (préciser la raison à côté)
 
@@ -628,6 +635,67 @@ Recherche menée sur des retours d'expérience Reddit (r/vibecoding, r/SaaS, r/C
 
 ---
 
+## 27. Méthodologie d'estimation
+
+Le backlog de démarrage (sections 22 et 24) a produit douze tickets livrés, mesurés et fusionnés. Cette section en tire un modèle d'estimation réutilisable pour tout ticket à venir. Il se recalibre : chaque nouveau ticket livré ajoute un point d'observation, et les fourchettes ci-dessous sont à revoir quand elles cessent de décrire la réalité.
+
+### Ce que l'on ne mesure pas
+
+Le temps écoulé n'est pas une unité d'estimation de ce projet. Les horodatages disponibles — commits, ouverture et fusion des pull requests — mélangent le travail, l'attente d'une réponse humaine et l'exécution de la CI, dans des proportions qui varient d'un facteur dix d'un ticket à l'autre. Un ticket de 1 704 lignes a été commité onze minutes après le précédent, puis a attendu trois heures avant d'être fusionné. Estimer en heures à partir de telles données donnerait un chiffre précis et faux.
+
+### Les trois mesures retenues
+
+- **Lignes écrites à la main** — insertions, hors fichier de verrouillage et fichiers générés. Mesure la surface à produire.
+- **Cas de test écrits** — le nombre de blocs `it`, tous niveaux confondus. Mesure l'effort de vérification.
+- **Corrections avant fusion** — défauts trouvés et corrigés pendant le ticket, y compris ceux qui touchaient le harnais de test. Mesure le risque.
+
+### Axe 1 — Surface
+
+Une feature qui traverse les couches standard — migration, repository, Server Action, composant, page, tests — coûte **1 200 à 1 700 lignes**. Dix des douze tickets livrés tombent dans cette bande, dont les six tickets de complexité M à ±16 % de leur moyenne.
+
+Les deux exceptions disent quoi faire des valeurs aberrantes :
+
+- **Sous 800 lignes**, le ticket n'ajoute pas de couche : c'est un référentiel de données, de la configuration ou un affichage. L'estimation ne s'applique pas telle quelle.
+- **Au-delà de 1 800 lignes**, le ticket en contient deux. Le redécouper avant d'estimer, et non après.
+
+### Axe 2 — Nouveauté
+
+La complexité S/M/L de la section 22 ne prédit pas le volume : les bandes L et M se recouvrent entièrement, et le plus gros ticket M dépasse deux des trois tickets L. Ce qui prédit le coût réel, ce sont les **mécanismes d'intégration inédits** — un protocole, un runtime, un service externe, un mode d'exécution jamais utilisé jusque-là dans la codebase. La nouveauté métier ne compte pas : concevoir l'intégralité du schéma de données n'a produit aucune correction, parce que du DDL se vérifie statiquement.
+
+| Classe | Définition | Corrections attendues |
+|---|---|---|
+| Répétition | Aucun mécanisme nouveau | 0 à 1 |
+| Extension | Un mécanisme nouveau | 0 à 2 |
+| Fondation | Deux mécanismes nouveaux ou plus | 3 à 4 |
+
+Corroboration indépendante : les deux seules pull requests ayant échoué en intégration continue au premier passage relevaient toutes deux de la classe fondation. Aucun ticket de répétition n'a échoué.
+
+Le triplet S/M/L garde un usage : un repère qualitatif rapide au moment d'écrire un ticket, pour le porteur qui n'a pas encore les mesures des deux axes sous la main. Il ne doit plus servir à estimer un effort ou une fourchette — c'est le rôle de cette section à partir de maintenant.
+
+### La vérification est une facette, pas une finition
+
+**Environ 45 % des lignes écrites sont du test.** Une estimation qui ne chiffre que le code applicatif est fausse de moitié, pas d'une marge.
+
+Ce coût se déplace avec la nouveauté, pas avec la taille : les tickets qui introduisent un mécanisme inédit montent à 57–71 % de test, ceux qui répètent un mécanisme établi descendent à 30–35 %.
+
+**Environ quatre corrections sur dix portent sur le harnais de vérification lui-même**, et non sur le produit. C'est l'enseignement le plus coûteux du backlog de démarrage : trois tickets ont livré des tests qui passaient sans rien démontrer, et les règles de la section 21 en découlent directement. Une estimation doit donc prévoir du temps pour corriger les tests, au même titre que pour corriger le code.
+
+### Procédure
+
+1. Compter les couches traversées, en déduire la surface.
+2. Compter les mécanismes d'intégration inédits, en déduire la classe de nouveauté et la fourchette de corrections.
+3. Vérifier que la surface reste sous 1 800 lignes ; redécouper sinon.
+4. Énoncer la fourchette sur les trois mesures, jamais un chiffre unique.
+
+### Domaine de validité
+
+Le modèle est calibré sur des tickets dont la vérification est locale, déterministe, et rendue par une chaîne qui passe ou échoue. Il cesse de s'appliquer dans deux cas, qu'il faut alors signaler explicitement plutôt que d'estimer quand même :
+
+- **Ce qui ne se vérifie pas en local.** Un déploiement ne révèle une variable d'environnement manquante qu'une fois en production. Tant qu'un équivalent distant de la chaîne de vérification n'existe pas, l'incertitude n'est pas chiffrable.
+- **Ce dont la sortie n'est pas déterministe.** La stratégie de test de la section 21 sait établir qu'une contrainte tient ou qu'un abonné ne reçoit rien ; elle n'a aucune réponse à « cette sortie générée est-elle bonne ». Toute piste reposant sur des appels à un modèle de langage doit d'abord combler cette lacune méthodologique — le coût de cette invention n'entre dans aucune fourchette.
+
+---
+
 ## Journal des décisions
 
 - **v0.1 (2026-09-15)** — Consolidation initiale : concept général, proposition de valeur, fonctionnalités clés, bibliothèque de patterns, idées complémentaires, architecture d'intégration MCP, modèle de données, cycle de vie du ticket, méthodologie de roadmap, cadre éthique de découverte GitHub, faisabilité, roadmap MVP, et modèle de génération de backlog à partir d'une simple description.
@@ -645,3 +713,7 @@ Recherche menée sur des retours d'expérience Reddit (r/vibecoding, r/SaaS, r/C
 - **v0.13 (2026-09-24)** — Jalons et roadmap (SV-009) : la colonne `milestones.sante` est supprimée, la progression et la santé étant calculées à la lecture par la vue `jalons_avec_sante`. Une valeur stockée serait fausse dès qu'un jalon reste inactif, puisque la santé dépend du temps écoulé et non des seules écritures ; calculer à la lecture supprime en outre toute question de concurrence, faute d'agrégat stocké à protéger. La définition opérationnelle de la section 11 a demandé deux arbitrages : « tickets restants » désigne ceux qui n'ont pas atteint le statut « soumis », et les rythmes réel et requis sont ramenés à la même unité — tickets par jour — avant d'être comparés. Les dépendances entre tickets refusent les cycles, une boucle rendant la roadmap insoluble.
 - **v0.14 (2026-09-24)** — Troisième occurrence d'un test passant pour la mauvaise raison, promue en règle (section 21) : simuler un état passé se fait à la création de la donnée et jamais par une mise à jour, les triggers d'horodatage annulant tout recul de date ; et chaque seuil est franchi dans les deux sens. La règle s'applique désormais à tout ticket touchant à des seuils ou à de l'ancienneté.
 - **v0.15 (2026-09-24)** — Messagerie (SV-010) : un message suit la visibilité du projet ou du ticket qui le porte, règle déduite des politiques existantes plutôt que réécrite. Tout utilisateur authentifié voyant la discussion peut y écrire — la notion de membre reste hors périmètre. Ni modification ni suppression : l'absence de politique fait la protection. Précision ajoutée à la convention des abonnements (section 18) : un composant abonné ne recopie pas les données du serveur dans son état, il recompose l'affichage au rendu à partir des deux sources, sans quoi la revalidation reste sans effet et le fil dépend entièrement de la diffusion.
+- **v0.16 (2026-09-24)** — Deux conventions de Row Level Security promues après SV-010 (section 18) : une politique dont la visibilité découle d'une autre entité interroge la table dont elle dépend au lieu de recopier ses conditions ; et l'absence de politique, qui rend une donnée immuable, est couverte par un test qui tente l'opération et constate son échec.
+- **v0.17 (2026-09-24)** — Serveur MCP, premier outil (SV-011) : `scan_repo` analyse un dépôt local en lecture seule et porte dans sa sortie un champ `pousse_vers_la_plateforme` constamment faux, pour que l'absence d'écriture soit une donnée vérifiable et pas seulement une promesse de documentation. Deux niveaux de test : le contrat de la fonction d'analyse contre de vrais dépôts fixture, et le câblage MCP lui-même à travers un client réel — un outil peut produire le bon résultat et rester inutilisable. Un marqueur TODO n'est compté que suivi de deux-points : sans cette exigence, toute phrase mentionnant un TODO en devenait un.
+- **v0.18 (2026-09-24)** — Méthodologie d'estimation (section 27, nouvelle), calibrée sur les douze tickets du backlog de démarrage plutôt que sur des impressions : le temps écoulé est écarté comme unité, au profit des lignes écrites, des cas de test et des corrections avant fusion. Deux axes remplacent l'estimation par complexité — une surface stable autour de 1 400 lignes par feature, et une classe de nouveauté qui seule prédit les corrections. Le triplet S/M/L de la section 22 reste un repère qualitatif à l'écriture d'un ticket, mais cesse de servir à estimer un effort. La vérification est traitée comme une facette à part entière : environ 45 % des lignes et quatre corrections sur dix. Section 23 amendée en conséquence d'un besoin de SV-011 : les fichiers de commande Claude Code rejoignent la liste fermée des Markdown autorisés, au titre de la configuration et non de la documentation.
+- **v0.19 (2026-09-24)** — Ordre de priorité des chantiers après le backlog de démarrage : complétion du serveur MCP, puis déploiement, puis Vibe Security Gate. La complétion du serveur MCP passe en premier parce qu'elle est la seule dont le résultat réduit le coût des chantiers suivants ; le déploiement suit sans être repoussé, l'incertitude qu'il porte ne diminuant pas avec l'attente. Le Vibe Debt Auditor est ajourné tant qu'une méthode de vérification d'une génération non déterministe n'aura pas été conçue — c'est une lacune méthodologique, pas une marge d'incertitude (section 27, domaine de validité).
