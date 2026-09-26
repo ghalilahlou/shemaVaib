@@ -83,6 +83,16 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   identifiants sont fixes : relancer l'import met à jour les mêmes lignes sans détacher ce qui leur
   est rattaché.
 
+- **SV-015** — Système de design SchemaVibe : les tokens de couleur, de typographie, d'espacement
+  et de rayon vivent en variables CSS, thème sombre porté par `:root` et thème clair sous
+  `data-theme="light"`, au choix de la personne et non de son système. Six composants partagés dans
+  `components/ui/` — StatusBadge, PatternChip, HealthIndicator, VibeScoreGauge, PulseDivider,
+  TicketCard —, aucun ne portant de couleur propre et aucun ne faisant reposer une information sur
+  la seule couleur : chaque teinte est doublée d'un libellé. Un test de contraste calcule les
+  rapports au lieu de s'en remettre à l'œil, sur les quatre surfaces et dans les deux thèmes, et
+  vérifie que la feuille de style transcrit fidèlement les tokens — sans quoi il validerait une
+  palette que l'application n'utilise pas.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
