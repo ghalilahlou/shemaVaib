@@ -37,33 +37,38 @@ afterAll(async () => {
   await rm(base, { recursive: true, force: true });
 });
 
+/** La déclaration de `scan_repo`, quel que soit l'ordre de la liste. */
+function scanRepo(tools: Awaited<ReturnType<Client['listTools']>>['tools']) {
+  return tools.find((outil) => outil.name === 'scan_repo');
+}
+
 describe('déclaration de l’outil', () => {
-  it('expose scan_repo, et lui seul pour l’instant', async () => {
+  it('expose scan_repo et claim_ticket, et eux seuls pour l’instant', async () => {
     const { tools } = await client.listTools();
 
-    // Les trois autres outils de la section 8 relèvent de tickets à venir :
-    // les exposer vides induirait en erreur.
-    expect(tools.map((outil) => outil.name)).toEqual(['scan_repo']);
+    // `create_tickets` et `submit_solution` relèvent de tickets à venir : les
+    // exposer vides induirait en erreur.
+    expect(tools.map((outil) => outil.name).sort()).toEqual(['claim_ticket', 'scan_repo']);
   });
 
   it('annonce un outil en lecture seule', async () => {
     const { tools } = await client.listTools();
 
-    expect(tools[0]?.annotations?.readOnlyHint).toBe(true);
-    expect(tools[0]?.annotations?.destructiveHint).toBe(false);
+    expect(scanRepo(tools)?.annotations?.readOnlyHint).toBe(true);
+    expect(scanRepo(tools)?.annotations?.destructiveHint).toBe(false);
   });
 
   it('dit dans sa description qu’il n’écrit rien sur la plateforme', async () => {
     const { tools } = await client.listTools();
 
-    expect(tools[0]?.description).toContain('n’écrit rien');
+    expect(scanRepo(tools)?.description).toContain('n’écrit rien');
   });
 
   it('déclare un schéma d’entrée et un schéma de sortie', async () => {
     const { tools } = await client.listTools();
 
-    expect(tools[0]?.inputSchema?.properties).toHaveProperty('chemin');
-    expect(tools[0]?.outputSchema?.properties).toHaveProperty('signaux');
+    expect(scanRepo(tools)?.inputSchema?.properties).toHaveProperty('chemin');
+    expect(scanRepo(tools)?.outputSchema?.properties).toHaveProperty('signaux');
   });
 });
 
@@ -116,5 +121,26 @@ describe('identité du serveur', () => {
     // Le nom sert de clé dans `.mcp.json` : le changer casserait les
     // configurations existantes.
     expect(MCP_SERVER_NAME).toBe('schemavibe');
+  });
+});
+
+describe('serveur lancé sans jeton personnel', () => {
+  // SV-018 : `claim_ticket` a besoin d'une identité, `scan_repo` non. Un serveur
+  // sans SCHEMAVIBE_URL ni SCHEMAVIBE_TOKEN doit continuer de servir le second
+  // et refuser le premier en disant quoi configurer, sans tomber.
+  it('refuse claim_ticket en nommant la variable manquante', async () => {
+    const reponse = await client.callTool({
+      name: 'claim_ticket',
+      arguments: { ticket: crypto.randomUUID() },
+    });
+
+    expect(reponse.isError).toBe(true);
+    expect(JSON.stringify(reponse.content)).toContain('SCHEMAVIBE_URL');
+  });
+
+  it('continue de servir scan_repo après ce refus', async () => {
+    const reponse = await client.callTool({ name: 'scan_repo', arguments: { chemin: depot } });
+
+    expect(reponse.isError).toBeFalsy();
   });
 });

@@ -93,6 +93,15 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   vérifie que la feuille de style transcrit fidèlement les tokens — sans quoi il validerait une
   palette que l'application n'utilise pas.
 
+- **SV-018** — Serveur MCP, outil `claim_ticket` et commande `/schemavibe work <id>` : un ticket
+  ouvert est réclamé au nom du porteur du jeton personnel, et la session reçoit son contexte
+  complet — critères d'acceptation, critère de test, patterns suggérés, tickets bloquants et
+  tentatives précédentes. L'outil n'a aucun droit propre : la RLS décide de ce qui est visible, et
+  le compare-and-swap de `reclamer_ticket` garantit qu'une seule réclamation aboutit. Un ticket
+  invisible et un identifiant inexistant reçoivent la même réponse, et réclamer un ticket que l'on
+  tient déjà reprend le travail au lieu d'échouer. Le serveur se connecte à la demande : sans jeton
+  configuré, `scan_repo` reste disponible et `claim_ticket` nomme la variable manquante.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
