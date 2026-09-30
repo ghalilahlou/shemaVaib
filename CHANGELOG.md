@@ -108,3 +108,12 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   Supabase, qui disait en clair qu'une adresse était déjà inscrite ; ce cas reçoit la même réponse
   qu'une adresse à confirmer. Une inscription qui n'ouvre pas de session, une fois la confirmation
   d'e-mail activée, invite à confirmer l'adresse au lieu de rediriger un visiteur anonyme.
+
+- **SV-017** — Avis de sécurité du linter Supabase sur les fonctions. `touch_maj_le` et
+  `verifier_jalon_meme_projet` reçoivent un `search_path` vide, comme toutes les autres fonctions
+  du schéma. Les cinq fonctions de trigger perdent le droit `EXECUTE` accordé par défaut à
+  `public`, `anon` et `authenticated` ; le déclenchement n'en dépend pas. PostgREST ne publiant
+  pas les fonctions de trigger, l'appel par `/rest/v1/rpc/` annoncé par le linter n'était pas
+  atteignable : le retrait ferme l'accès au niveau SQL. `projet_est_public` et
+  `est_proprietaire_du_projet` restent exécutables, les politiques RLS s'évaluant avec les droits
+  de l'appelant ; un test vérifie qu'elles ne révèlent rien que la RLS ne rende déjà lisible.
