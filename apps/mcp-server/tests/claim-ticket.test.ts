@@ -1,33 +1,32 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { creerServeur } from '../src/index.js';
-import type { SourceSession } from '../src/lib/plateforme.js';
 import {
   ReclamationRefusee,
   claimTicketResultatSchema,
   reclamerEtLireTicket,
   type MotifRefus,
 } from '../src/tools/claim-ticket.js';
+import {
+  creerAdmin,
+  creerPersonne as creerCompte,
+  creerProjet as creerProjetDe,
+  creerTicket as creerTicketDans,
+  premierPattern,
+  supprimerComptes,
+  type Personne,
+} from './helpers/plateforme.js';
 
 /**
  * SV-018 — `claim_ticket` contre la Supabase locale.
  *
- * L'échange du jeton personnel est déjà couvert par SV-014 ; la session est donc
- * ouverte ici directement, par mot de passe, pour la même identité. Ce qui est
- * vérifié, c'est ce que l'outil fait de cette identité : réclamer en son nom et
+ * Ce qui est vérifié, c'est ce que l'outil fait de l'identité qu'on lui donne
+ * (voir `helpers/plateforme.ts`) : réclamer en son nom et
  * pas en un autre, ne rien réclamer de ce qu'elle ne voit pas, et laisser la
  * base trancher entre deux réclamations simultanées.
  */
-
-const MOT_DE_PASSE = 'MotDePasseDeTest12345';
-
-interface Personne {
-  id: string;
-  nom: string;
-  session: SourceSession;
-}
 
 let admin: SupabaseClient;
 const comptes: string[] = [];
@@ -40,107 +39,10 @@ let projetPublic: string;
 let projetBrouillon: string;
 let pattern: { id: string; nom: string };
 
-function variable(nom: string): string {
-  const valeur = process.env[nom];
-
-  if (!valeur) {
-    throw new Error(`${nom} est absent : démarrez la Supabase locale (pnpm db:start).`);
-  }
-
-  return valeur;
-}
-
-async function creerPersonne(nom: string): Promise<Personne> {
-  const email = `mcp-${crypto.randomUUID()}@schemavibe.test`;
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    password: MOT_DE_PASSE,
-    email_confirm: true,
-    user_metadata: { nom },
-  });
-
-  if (error || !data.user) {
-    throw new Error(`Création du compte impossible : ${error?.message ?? 'inconnu'}`);
-  }
-
-  comptes.push(data.user.id);
-
-  const client = createClient(
-    variable('NEXT_PUBLIC_SUPABASE_URL'),
-    variable('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
-    { auth: { autoRefreshToken: false, persistSession: false } },
-  );
-  const { error: erreurSession } = await client.auth.signInWithPassword({
-    email,
-    password: MOT_DE_PASSE,
-  });
-
-  if (erreurSession) {
-    throw new Error(`Ouverture de session impossible : ${erreurSession.message}`);
-  }
-
-  const id = data.user.id;
-
-  return {
-    id,
-    nom,
-    session: {
-      identite: () => Promise.resolve({ id, nom }),
-      client: () => Promise.resolve(client),
-    },
-  };
-}
-
-async function creerProjet(statut: 'actif' | 'brouillon'): Promise<string> {
-  const { data, error } = await admin
-    .from('projects')
-    .insert({ proprietaire_id: porteuse.id, nom: `Projet SV-018 ${statut}`, statut })
-    .select('id')
-    .single();
-
-  if (error) throw error;
-
-  return (data as { id: string }).id;
-}
-
-/** Un ticket qui réunit la Definition of Ready, publié ou laissé en brouillon. */
-async function creerTicket(
-  projetId: string,
-  titre: string,
-  statut: 'ouvert' | 'brouillon' = 'ouvert',
-): Promise<string> {
-  const { data, error } = await admin
-    .from('tickets')
-    .insert({
-      projet_id: projetId,
-      titre,
-      contexte: 'Le filtre par statut manque sur la liste des tickets.',
-      criteres_acceptation: 'Un filtre par statut existe et conserve la sélection.',
-      critere_test: 'Filtrer sur « ouvert » ne laisse que des tickets ouverts.',
-      complexite: 'S',
-    })
-    .select('id')
-    .single();
-
-  if (error) throw error;
-
-  const id = (data as { id: string }).id;
-
-  const { error: erreurLien } = await admin
-    .from('ticket_patterns')
-    .insert({ ticket_id: id, pattern_id: pattern.id, role: 'suggere' });
-  if (erreurLien) throw erreurLien;
-
-  if (statut === 'ouvert') {
-    const { error: erreurPublication } = await admin
-      .from('tickets')
-      .update({ statut: 'ouvert' })
-      .eq('id', id);
-    if (erreurPublication) throw erreurPublication;
-  }
-
-  return id;
-}
+const creerPersonne = (nom: string) => creerCompte(admin, comptes, nom);
+const creerProjet = (statut: 'actif' | 'brouillon') => creerProjetDe(admin, porteuse.id, statut);
+const creerTicket = (projetId: string, titre: string, statut: 'ouvert' | 'brouillon' = 'ouvert') =>
+  creerTicketDans(admin, { projetId, patternId: pattern.id, titre, statut });
 
 async function reclamantEnBase(ticketId: string): Promise<string | null> {
   const { data, error } = await admin
@@ -166,28 +68,19 @@ async function motifDuRefus(promesse: Promise<unknown>): Promise<MotifRefus> {
 }
 
 beforeAll(async () => {
-  admin = createClient(
-    variable('NEXT_PUBLIC_SUPABASE_URL'),
-    variable('SUPABASE_SERVICE_ROLE_KEY'),
-    { auth: { autoRefreshToken: false, persistSession: false } },
-  );
+  admin = creerAdmin();
 
   porteuse = await creerPersonne('Porteuse SV-018');
   contributrice = await creerPersonne('Contributrice SV-018');
   tiers = await creerPersonne('Tiers SV-018');
-
-  const { data: patterns, error } = await admin.from('patterns').select('id, nom').limit(1);
-  if (error || !patterns?.[0]) throw new Error('Bibliothèque de patterns vide.');
-  pattern = patterns[0] as { id: string; nom: string };
+  pattern = await premierPattern(admin);
 
   projetPublic = await creerProjet('actif');
   projetBrouillon = await creerProjet('brouillon');
 });
 
 afterAll(async () => {
-  for (const id of comptes) {
-    await admin.auth.admin.deleteUser(id);
-  }
+  await supprimerComptes(admin, comptes);
 });
 
 describe('réclamer un ticket ouvert', () => {

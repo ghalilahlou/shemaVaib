@@ -43,12 +43,16 @@ function scanRepo(tools: Awaited<ReturnType<Client['listTools']>>['tools']) {
 }
 
 describe('déclaration de l’outil', () => {
-  it('expose scan_repo et claim_ticket, et eux seuls pour l’instant', async () => {
+  it('expose scan_repo, claim_ticket et submit_solution, et eux seuls pour l’instant', async () => {
     const { tools } = await client.listTools();
 
-    // `create_tickets` et `submit_solution` relèvent de tickets à venir : les
-    // exposer vides induirait en erreur.
-    expect(tools.map((outil) => outil.name).sort()).toEqual(['claim_ticket', 'scan_repo']);
+    // `create_tickets` relève d'un ticket à venir : l'exposer vide induirait en
+    // erreur.
+    expect(tools.map((outil) => outil.name).sort()).toEqual([
+      'claim_ticket',
+      'scan_repo',
+      'submit_solution',
+    ]);
   });
 
   it('annonce un outil en lecture seule', async () => {

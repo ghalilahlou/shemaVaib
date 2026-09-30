@@ -13,7 +13,7 @@ le [README racine](../../README.md).
 | `scan_repo`       | disponible   |
 | `create_tickets`  | à construire |
 | `claim_ticket`    | disponible   |
-| `submit_solution` | à construire |
+| `submit_solution` | disponible   |
 
 `scan_repo` analyse un dépôt local — densité de commits récents, présence de tests, TODO non
 résolus — et rend un constat structuré. Il est en **lecture seule** : il ne crée aucun ticket et
@@ -25,6 +25,13 @@ contexte : critères d'acceptation, critère de test, patterns suggérés, ticke
 tentatives précédentes. Il n'a aucun droit propre : la Row Level Security décide de ce qui est
 visible, et la fonction `reclamer_ticket` garantit qu'une seule réclamation aboutit. Réclamer un
 ticket que l'on tient déjà reprend le travail en cours au lieu d'échouer.
+
+`submit_solution` rattache une solution au ticket que l'on tient : lien du diff, lien de l'aperçu, et
+résumé Markdown stocké dans `resume_md` (jamais écrit dans le dépôt). Le résumé distingue ce que git
+établit — fichiers modifiés depuis l'ancêtre commun avec la base, tests touchés, fichiers non
+commités — de ce que l'agent déclare : décisions prises et résultats des tests lancés en local,
+présentés comme non vérifiés par la plateforme. **Sans `confirmer: true`, il ne rend qu'un aperçu
+et n'écrit rien** ; la sortie le dit par `soumis: false`.
 
 ## Se connecter à la plateforme
 
@@ -92,9 +99,19 @@ appelle `scan_repo` sur le chemin fourni, ou sur le répertoire courant à défa
 Elle appelle `claim_ticket` sur l'identifiant donné, affiche les critères tels quels, signale les
 tickets bloquants et propose un plan avant de toucher au code.
 
+## La commande `/schemavibe submit`
+
+```
+/schemavibe submit
+/schemavibe submit 5c8e0a1a-0000-4000-8000-100000000013
+```
+
+Elle rassemble les liens et les décisions, lance les tests du projet, montre l'aperçu du résumé et
+ne soumet qu'après accord explicite.
+
 ## Tests
 
-Trois niveaux, pour trois risques différents.
+Trois niveaux, pour trois risques différents, plus un test de contrat git.
 
 Le **test de contrat** (`tests/scan-repo.test.ts`) crée de vrais dépôts temporaires — un actif et
 testé, un vibe-codé abandonné, un export sans git — et vérifie que la sortie respecte le schéma
@@ -109,3 +126,9 @@ Le **test d'intégration** (`tests/claim-ticket.test.ts`) vise la Supabase local
 les variables dans `apps/web/.env.local` (en CI, elles sont déjà exportées). Il vérifie que
 `claim_ticket` réclame au nom de l'identité fournie et d'aucune autre, ne réclame rien de ce
 qu'elle ne voit pas, et laisse la base trancher entre deux réclamations simultanées.
+
+`tests/submit-solution.test.ts` vérifie que sans confirmation rien n'est écrit, qu'avec
+confirmation c'est exactement l'aperçu qui est stocké, et que seul le réclamant courant peut
+soumettre. `tests/travail-local.test.ts` éprouve la lecture git contre un dépôt fixture qui réunit
+renommage, suppression, nom accentué, commit arrivé sur la base après le départ de la branche et
+fichiers non commités.

@@ -167,3 +167,40 @@ export async function reclamerTicket(client: SupabaseClient, ticketId: string): 
 
   throw new AccesTicketsError('La réclamation a échoué.', error);
 }
+
+export const soumissionEnregistreeSchema = z.object({
+  id: z.uuid(),
+  cree_le: z.string(),
+});
+
+export type SoumissionEnregistree = z.infer<typeof soumissionEnregistreeSchema>;
+
+/**
+ * Rattache une soumission au ticket, au nom de l'identité du client.
+ *
+ * Passe par `soumettre_solution`, où la transition du ticket vers « soumis » sert
+ * de garde à l'insertion (SV-006) : seul le réclamant courant peut soumettre, et
+ * un ticket relâché entre-temps ne reçoit rien. Rend `null` quand cette garde
+ * refuse, sans distinguer davantage.
+ */
+export async function soumettreSolution(
+  client: SupabaseClient,
+  entree: { ticketId: string; diffUrl: string; previewUrl: string; resumeMd: string },
+): Promise<SoumissionEnregistree | null> {
+  const { data, error } = await client.rpc('soumettre_solution', {
+    ticket: entree.ticketId,
+    diff_url: entree.diffUrl,
+    preview_url: entree.previewUrl,
+    resume_md: entree.resumeMd,
+  });
+
+  if (!error) {
+    return soumissionEnregistreeSchema.parse(data);
+  }
+
+  if (error.message.includes('ticket_non_soumettable')) {
+    return null;
+  }
+
+  throw new AccesTicketsError('La soumission a échoué.', error);
+}

@@ -1,6 +1,6 @@
 ---
-description: Outils SchemaVibe. Usage : /schemavibe scan [chemin] · /schemavibe work <id>
-allowed-tools: mcp__schemavibe__scan_repo, mcp__schemavibe__claim_ticket
+description: Outils SchemaVibe. Usage : /schemavibe scan [chemin] · /schemavibe work <id> · /schemavibe submit [id]
+allowed-tools: mcp__schemavibe__scan_repo, mcp__schemavibe__claim_ticket, mcp__schemavibe__submit_solution
 ---
 
 Sous-commande demandée : `$ARGUMENTS`
@@ -51,10 +51,33 @@ Si l'outil réussit :
    des fichiers.
 
 Le ticket reste réclamé tant qu'il n'est pas relâché ou soumis : la soumission
-passera par `/schemavibe submit`, pas encore disponible.
+passe par `/schemavibe submit`.
+
+## submit
+
+Si la sous-commande est `submit`, le ticket est celui donné en second argument,
+ou à défaut celui pris avec `/schemavibe work` dans cette session. Si aucun des
+deux n'existe, demande l'identifiant et n'appelle rien.
+
+1. **Liens.** Il faut le lien du diff et celui de l'aperçu live. Si la branche
+   a une pull request, `gh pr view --json url` donne le premier ; sinon,
+   demande-les. N'invente jamais un lien.
+2. **Tests.** Lance la commande de test du projet et retiens la commande, son
+   issue et la fin de sa sortie. Si aucun test n'a pu être lancé, dis-le et
+   n'envoie pas `tests_locaux`.
+3. **Décisions.** Formule les décisions réellement prises pendant la session,
+   une par entrée, pour un relecteur qui n'a pas suivi la conversation.
+4. **Aperçu.** Appelle `submit_solution` **sans** `confirmer` : rien n'est
+   écrit. Montre le résumé rendu tel quel, et signale les fichiers non
+   commités s'il y en a — ils ne sont pas dans le diff.
+5. **Confirmation.** Demande explicitement s'il faut soumettre. Seulement sur un
+   accord clair, rappelle l'outil avec les mêmes arguments et `confirmer: true`.
+   Toute modification demandée entre les deux repart de l'étape 4.
+
+Si l'outil refuse, rapporte son message tel quel et arrête-toi.
 
 ## Autre sous-commande
 
-Si `$ARGUMENTS` est vide ou ne commence ni par `scan` ni par `work`, indique
-que seules ces deux sous-commandes existent pour l'instant, les outils
-`create_tickets` et `submit_solution` restant à construire.
+Si `$ARGUMENTS` est vide ou ne commence ni par `scan`, ni par `work`, ni par
+`submit`, indique que seules ces trois sous-commandes existent pour l'instant,
+l'outil `create_tickets` restant à construire.
