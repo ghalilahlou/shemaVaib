@@ -43,3 +43,18 @@ export const MESSAGE_INSCRIPTION_A_CONFIRMER =
  */
 export const MESSAGE_MAGIC_LINK_ENVOYE =
   'Si un compte existe pour cette adresse, un lien de connexion vient d’y être envoyé.';
+
+/**
+ * Réponse à une demande de réinitialisation (SV-021) : identique que l'adresse
+ * soit inscrite ou non, pour la même raison que le magic link.
+ */
+export const MESSAGE_REINITIALISATION_ENVOYEE =
+  'Si un compte existe pour cette adresse, un lien pour choisir un nouveau mot de passe vient d’y être envoyé.';
+
+export const MESSAGE_SESSION_EXPIREE =
+  'Votre session a expiré. Demandez un nouveau lien de réinitialisation.';
+
+export const MESSAGE_MOT_DE_PASSE_IDENTIQUE = 'Choisissez un mot de passe différent de l’actuel.';
+
+export const MESSAGE_MOT_DE_PASSE_IMPOSSIBLE =
+  'Le mot de passe n’a pas pu être modifié. Réessayez dans un instant.';

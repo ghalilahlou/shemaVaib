@@ -19,6 +19,7 @@ export function ChampTexte({
   required = true,
   aide,
   erreurs,
+  valeurInitiale,
 }: {
   /** Nom du champ dans le `FormData`, lu par la Server Action. */
   nom: string;
@@ -35,6 +36,8 @@ export function ChampTexte({
   required?: boolean;
   aide?: string;
   erreurs?: string[] | undefined;
+  /** Valeur affichée au premier rendu — le nom actuel sur la page de profil. */
+  valeurInitiale?: string;
 }) {
   const idAide = aide ? `${id}-aide` : undefined;
   const idErreur = erreurs?.length ? `${id}-erreur` : undefined;
@@ -53,6 +56,7 @@ export function ChampTexte({
         autoComplete={autoComplete}
         aria-describedby={describedBy}
         aria-invalid={erreurs?.length ? true : undefined}
+        defaultValue={valeurInitiale}
         className="rounded-md border border-black/15 px-3 py-2 dark:border-white/20"
       />
       {aide ? (

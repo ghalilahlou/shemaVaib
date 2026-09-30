@@ -93,6 +93,11 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   vérifie que la feuille de style transcrit fidèlement les tokens — sans quoi il validerait une
   palette que l'application n'utilise pas.
 
+- **SV-021** — Mot de passe oublié et page de profil. Un lien reçu par e-mail mène au choix d'un
+  nouveau mot de passe, avec la même réponse que l'adresse soit inscrite ou non ; une personne
+  connectée peut aussi changer le sien. La page `/profil` montre l'XP et le Vibe Score, en lecture
+  seule, et permet de changer son nom public, accessible depuis l'en-tête.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
@@ -108,3 +113,9 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   Supabase, qui disait en clair qu'une adresse était déjà inscrite ; ce cas reçoit la même réponse
   qu'une adresse à confirmer. Une inscription qui n'ouvre pas de session, une fois la confirmation
   d'e-mail activée, invite à confirmer l'adresse au lieu de rediriger un visiteur anonyme.
+
+- **SV-021** — Un utilisateur pouvait s'attribuer lui-même XP et Vibe Score : la politique
+  `users_maj_de_son_profil` ouvrait toute la ligne `users` à son propriétaire, et un simple
+  `update users set xp = 999999, vibe_score = 100` passait sans erreur. La politique est supprimée ;
+  le nom, seul champ modifiable, passe par la fonction `modifier_mon_nom`, conformément à la
+  convention des mutations à colonnes restreintes (section 18).
