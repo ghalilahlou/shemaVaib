@@ -14,6 +14,13 @@ import {
   resumerEnTexte as resumerReclamation,
 } from './tools/claim-ticket.js';
 import {
+  SoumissionRefusee,
+  preparerOuSoumettre,
+  resumerEnTexte as resumerSoumission,
+  submitSolutionInputSchema,
+  submitSolutionOutputSchema,
+} from './tools/submit-solution.js';
+import {
   resumerEnTexte,
   scanRepoInputSchema,
   scanRepoOutputSchema,
@@ -26,11 +33,11 @@ import {
  * Un seul serveur pour tous les outils compatibles MCP — Claude Code, Cursor et
  * les autres — plutôt qu'une intégration par éditeur.
  *
- * `scan_repo` lit un dépôt local et n'écrit rien. `claim_ticket` écrit sur la
- * plateforme, au nom du porteur du jeton personnel (SV-014) et jamais avec plus
- * de droits que lui. `create_tickets` et `submit_solution` viendront avec leurs
- * propres tickets ; la règle que le premier devra respecter est déjà posée :
- * jamais de création sans confirmation explicite.
+ * `scan_repo` lit un dépôt local et n'écrit rien. `claim_ticket` et
+ * `submit_solution` écrivent sur la plateforme, au nom du porteur du jeton
+ * personnel (SV-014) et jamais avec plus de droits que lui ; le second ne le
+ * fait que sur confirmation explicite. `create_tickets` viendra avec son propre
+ * ticket, sous la même règle.
  */
 
 export const MCP_SERVER_NAME = 'schemavibe' as const;
@@ -114,6 +121,43 @@ export function creerServeur(options: OptionsServeur = {}): McpServer {
         };
       } catch (erreur) {
         if (erreur instanceof ReclamationRefusee || erreur instanceof ConnexionRefusee) {
+          return echec(erreur.message);
+        }
+
+        throw erreur;
+      }
+    },
+  );
+
+  serveur.registerTool(
+    'submit_solution',
+    {
+      title: 'Soumettre une solution',
+      description:
+        'Rattache une solution au ticket que vous tenez : lien du diff, lien de l’aperçu, et ' +
+        'résumé Markdown rédigé à partir du dépôt local (fichiers modifiés, tests touchés) et de ' +
+        'vos déclarations (décisions, tests lancés). Sans confirmer: true, rend seulement un ' +
+        'aperçu et n’écrit rien : montrez-le à la personne avant de confirmer.',
+      inputSchema: submitSolutionInputSchema,
+      outputSchema: submitSolutionOutputSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        // Chaque soumission confirmée s'ajoute à l'historique du ticket.
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+    },
+    async (entree) => {
+      try {
+        const resultat = await preparerOuSoumettre(obtenirSession(), entree);
+
+        return {
+          content: [{ type: 'text' as const, text: resumerSoumission(resultat) }],
+          structuredContent: resultat,
+        };
+      } catch (erreur) {
+        if (erreur instanceof SoumissionRefusee || erreur instanceof ConnexionRefusee) {
           return echec(erreur.message);
         }
 

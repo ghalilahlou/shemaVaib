@@ -70,6 +70,17 @@ const MOTIFS_TEST = [
 ];
 
 /**
+ * Un chemin désigne-t-il un fichier de test ?
+ *
+ * Exporté pour que `submit_solution` reconnaisse les tests touchés par une
+ * soumission selon les mêmes motifs que `scan_repo` : deux définitions
+ * finiraient par diverger.
+ */
+export function estUnFichierDeTest(chemin: string): boolean {
+  return MOTIFS_TEST.some((motif) => motif.test(`/${chemin}`));
+}
+
+/**
  * Marqueur suivi de deux-points, éventuellement précédé d'un responsable entre
  * parenthèses — `TODO:`, `FIXME(alice):`.
  *
@@ -232,9 +243,7 @@ export async function listerFichiers(racine: string): Promise<string[]> {
 
 /** Présence d'un filet de tests, par les fichiers et par les scripts déclarés. */
 export async function analyserTests(racine: string, fichiers: string[]): Promise<Tests> {
-  const fichiersTest = fichiers.filter((fichier) =>
-    MOTIFS_TEST.some((motif) => motif.test(`/${fichier}`)),
-  );
+  const fichiersTest = fichiers.filter(estUnFichierDeTest);
 
   return {
     present: fichiersTest.length > 0,

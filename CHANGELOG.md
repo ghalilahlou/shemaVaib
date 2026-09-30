@@ -102,6 +102,15 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   tient déjà reprend le travail au lieu d'échouer. Le serveur se connecte à la demande : sans jeton
   configuré, `scan_repo` reste disponible et `claim_ticket` nomme la variable manquante.
 
+- **SV-019** — Serveur MCP, outil `submit_solution` et commande `/schemavibe submit` : la solution
+  est rattachée au ticket tenu avec le lien du diff, celui de l'aperçu et un résumé Markdown stocké
+  dans `resume_md`. Sans `confirmer: true`, l'outil ne rend qu'un aperçu et n'écrit rien — la
+  sortie le dit par `soumis: false` —, et ce qui est confirmé est exactement ce qui a été montré.
+  Le résumé sépare ce que git établit — fichiers modifiés depuis l'ancêtre commun avec la base,
+  tests touchés, fichiers non commités — de ce que l'agent déclare, décisions et tests locaux,
+  présentés comme non vérifiés par la plateforme. Seul le réclamant courant peut soumettre, y
+  compris lorsque le ticket lui est retiré entre l'aperçu et la confirmation.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
