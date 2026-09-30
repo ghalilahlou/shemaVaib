@@ -288,8 +288,38 @@ export const BACKLOG_INITIAL: TicketDuBacklog[] = [
     critere_test:
       'Un test de contraste automatisé, et non une relecture visuelle : tout texte atteint 4,5:1 sur chacune des quatre surfaces, dans les deux thèmes, et chaque pastille atteint 3:1. Le même test vérifie que la feuille de style transcrit fidèlement les tokens, sans quoi il validerait une palette que l’application n’utilise pas.',
     complexite: 'M',
-    statut: 'ouvert',
+    statut: 'fusionne',
     pattern: 'Spec-First',
     depend_de: ['SV-004'],
+  },
+  {
+    id: identifiant(16),
+    reference: 'SV-016',
+    titre: 'SV-016 — Durcissement de l’authentification',
+    contexte:
+      'Une page protégée renvoie vers /connexion?next=…, mais la connexion menait toujours à /projets, et ni le magic link ni GitHub ne transmettaient la destination. Le callback vérifiait cette destination par un simple préfixe, que /\\exemple.com franchissait. L’inscription, enfin, affichait le message brut de Supabase, qui dit en clair qu’une adresse est déjà inscrite.',
+    criteres_acceptation:
+      'Les quatre chemins — mot de passe, magic link, GitHub, inscription — ramènent à la page demandée. Une règle unique décide si une destination est interne, et toute destination externe retombe sur /projets. Une adresse déjà inscrite reçoit la même réponse qu’une adresse à confirmer, et une inscription sans session invite à confirmer l’adresse.',
+    critere_test:
+      'Des cas unitaires couvrent barre oblique inversée, tabulation et retour à la ligne intercalés ; remettre l’ancienne vérification en fait échouer trois. Des parcours end-to-end ramènent à la page protégée par chaque chemin, et une destination externe est ignorée alors que la connexion réussit.',
+    complexite: 'S',
+    statut: 'fusionne',
+    pattern: 'Guardrail Prompting',
+    depend_de: ['SV-001'],
+  },
+  {
+    id: identifiant(17),
+    reference: 'SV-017',
+    titre: 'SV-017 — Avis de sécurité Supabase sur les fonctions',
+    contexte:
+      'Le linter du projet distant signale deux fonctions sans search_path et des fonctions security definer exécutables par anon et authenticated, dont trois fonctions de trigger qui n’ont rien à faire dans l’API.',
+    criteres_acceptation:
+      'Toutes les fonctions du schéma public fixent leur search_path. Les fonctions de trigger perdent le droit EXECUTE sans cesser de se déclencher. Les fonctions laissées exécutables le sont pour une raison consignée en base.',
+    critere_test:
+      'Les droits sont relus fonction par fonction après migration ; les suites complètes passent sur une base neuve, preuve que les triggers se déclenchent toujours ; un test vérifie que les deux fonctions restées exécutables ne révèlent rien que la RLS ne rende déjà lisible, chaque absence précédée de son témoin positif.',
+    complexite: 'S',
+    statut: 'ouvert',
+    pattern: 'Guardrail Prompting',
+    depend_de: ['SV-002'],
   },
 ];
