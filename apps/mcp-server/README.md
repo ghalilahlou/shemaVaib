@@ -8,17 +8,25 @@ le [README racine](../../README.md).
 
 ## Outils exposés
 
-| Outil             | État         |
-| ----------------- | ------------ |
-| `scan_repo`       | disponible   |
-| `create_tickets`  | à construire |
-| `claim_ticket`    | disponible   |
-| `submit_solution` | disponible   |
+| Outil             | État       |
+| ----------------- | ---------- |
+| `scan_repo`       | disponible |
+| `create_tickets`  | disponible |
+| `claim_ticket`    | disponible |
+| `submit_solution` | disponible |
 
 `scan_repo` analyse un dépôt local — densité de commits récents, présence de tests, TODO non
 résolus — et rend un constat structuré. Il est en **lecture seule** : il ne crée aucun ticket et
 n'écrit rien sur la plateforme. Sa sortie porte le champ `pousse_vers_la_plateforme`, toujours
 `false`, pour que ce soit explicite dans les données et pas seulement dans la documentation.
+
+`create_tickets` crée un lot de tickets dans un projet que l'on porte — typiquement ceux que
+suggère `scan_repo`. **Sans `confirmer: true`, il rend seulement ce qu'il créerait** (`cree: false`).
+Chaque ticket est évalué par la Definition of Ready partagée : publié s'il est prêt et que
+`publier` vaut `true`, brouillon sinon, avec la liste de ce qui lui manque. Le lot est créé par la
+fonction `creer_tickets` en une transaction — tout ou rien —, en `security invoker` : la RLS du
+porteur s'applique à chaque insertion. Un titre déjà présent refuse le lot entier, ce qui rend une
+double confirmation sans effet.
 
 `claim_ticket` réclame un ticket ouvert **au nom du porteur du jeton personnel** et rend son
 contexte : critères d'acceptation, critère de test, patterns suggérés, tickets bloquants et
@@ -132,3 +140,7 @@ confirmation c'est exactement l'aperçu qui est stocké, et que seul le réclama
 soumettre. `tests/travail-local.test.ts` éprouve la lecture git contre un dépôt fixture qui réunit
 renommage, suppression, nom accentué, commit arrivé sur la base après le départ de la branche et
 fichiers non commités.
+
+`tests/create-tickets.test.ts` vérifie l'aperçu sans écriture, la création conforme à l'aperçu, le
+refus d'une seconde confirmation, et — en appelant `creer_tickets` directement — qu'un lot est créé
+en entier ou pas du tout et que la RLS de l'appelant s'applique dans la fonction.

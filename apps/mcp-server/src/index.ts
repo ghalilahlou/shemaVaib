@@ -14,6 +14,13 @@ import {
   resumerEnTexte as resumerReclamation,
 } from './tools/claim-ticket.js';
 import {
+  CreationRefusee,
+  createTicketsInputSchema,
+  createTicketsOutputSchema,
+  preparerOuCreer,
+  resumerEnTexte as resumerCreation,
+} from './tools/create-tickets.js';
+import {
   SoumissionRefusee,
   preparerOuSoumettre,
   resumerEnTexte as resumerSoumission,
@@ -33,11 +40,10 @@ import {
  * Un seul serveur pour tous les outils compatibles MCP — Claude Code, Cursor et
  * les autres — plutôt qu'une intégration par éditeur.
  *
- * `scan_repo` lit un dépôt local et n'écrit rien. `claim_ticket` et
- * `submit_solution` écrivent sur la plateforme, au nom du porteur du jeton
- * personnel (SV-014) et jamais avec plus de droits que lui ; le second ne le
- * fait que sur confirmation explicite. `create_tickets` viendra avec son propre
- * ticket, sous la même règle.
+ * `scan_repo` lit un dépôt local et n'écrit rien. `create_tickets`,
+ * `claim_ticket` et `submit_solution` écrivent sur la plateforme, au nom du
+ * porteur du jeton personnel (SV-014) et jamais avec plus de droits que lui ;
+ * le premier et le dernier ne le font que sur confirmation explicite.
  */
 
 export const MCP_SERVER_NAME = 'schemavibe' as const;
@@ -158,6 +164,43 @@ export function creerServeur(options: OptionsServeur = {}): McpServer {
         };
       } catch (erreur) {
         if (erreur instanceof SoumissionRefusee || erreur instanceof ConnexionRefusee) {
+          return echec(erreur.message);
+        }
+
+        throw erreur;
+      }
+    },
+  );
+
+  serveur.registerTool(
+    'create_tickets',
+    {
+      title: 'Créer des tickets',
+      description:
+        'Crée un lot de tickets dans un projet que vous portez — typiquement ceux que suggère ' +
+        'scan_repo. Chaque ticket est évalué selon la Definition of Ready : publié s’il est prêt ' +
+        'et que publier vaut true, brouillon sinon, avec ce qui lui manque. Sans confirmer: true, ' +
+        'rend seulement un aperçu et n’écrit rien : montrez-le à la personne avant de confirmer.',
+      inputSchema: createTicketsInputSchema,
+      outputSchema: createTicketsOutputSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        // Un lot confirmé deux fois est refusé comme doublon, sans rien créer.
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (entree) => {
+      try {
+        const resultat = await preparerOuCreer(obtenirSession(), entree);
+
+        return {
+          content: [{ type: 'text' as const, text: resumerCreation(resultat) }],
+          structuredContent: resultat,
+        };
+      } catch (erreur) {
+        if (erreur instanceof CreationRefusee || erreur instanceof ConnexionRefusee) {
           return echec(erreur.message);
         }
 

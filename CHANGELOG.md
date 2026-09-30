@@ -111,6 +111,14 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   présentés comme non vérifiés par la plateforme. Seul le réclamant courant peut soumettre, y
   compris lorsque le ticket lui est retiré entre l'aperçu et la confirmation.
 
+- **SV-020** — Serveur MCP, outil `create_tickets` : les tickets suggérés après un `scan_repo`
+  sont créés dans un projet que l'on porte, jamais sans confirmation explicite — sans
+  `confirmer: true`, l'outil rend seulement ce qu'il créerait. La Definition of Ready partagée
+  décide de ce qui est publié ; un ticket incomplet reste en brouillon avec la liste de ce qui lui
+  manque. Le lot est créé par la fonction `creer_tickets` en une transaction, tout ou rien, et en
+  `security invoker` : la RLS du porteur s'applique à chaque insertion sans être réécrite. Un
+  titre déjà présent refuse le lot entier, ce qui rend une double confirmation sans effet.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,

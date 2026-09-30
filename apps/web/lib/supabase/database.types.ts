@@ -482,6 +482,33 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      creer_tickets: {
+        Args: { lot: Json; projet: string }
+        Returns: {
+          complexite: Database["public"]["Enums"]["ticket_complexite"] | null
+          contexte: string | null
+          cree_le: string
+          critere_test: string | null
+          criteres_acceptation: string | null
+          id: string
+          jalon_id: string | null
+          maj_le: string
+          priorite: Database["public"]["Enums"]["ticket_priorite"]
+          projet_id: string
+          reclame_le: string | null
+          reclame_par: string | null
+          score_confiance: number | null
+          source: Database["public"]["Enums"]["ticket_source"]
+          statut: Database["public"]["Enums"]["ticket_statut"]
+          titre: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "tickets"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       est_proprietaire_du_projet: { Args: { projet: string }; Returns: boolean }
       projet_est_public: { Args: { projet: string }; Returns: boolean }
       reclamer_ticket: {
