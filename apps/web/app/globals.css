@@ -1,26 +1,172 @@
 @import 'tailwindcss';
 
+/**
+ * Système de design SchemaVibe (SV-015).
+ *
+ * Le thème sombre est le défaut, et non une variante : `:root` le porte
+ * directement. Le thème clair s'obtient par `data-theme="light"` sur l'élément
+ * racine, jamais par `prefers-color-scheme` — le choix appartient à la personne,
+ * pas à son système.
+ *
+ * Ces valeurs sont la transcription de `components/ui/tokens.ts`, qui fait
+ * autorité. Un test compare les deux à chaque exécution : elles ne peuvent pas
+ * diverger en silence.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Fonds, du plus profond au plus surélevé. */
+  --surface-000: #05070c;
+  --surface-100: #0b0e15;
+  --surface-200: #12161f;
+  --surface-300: #1b212d;
+
+  --border: #232a38;
+  --border-strong: #313a4d;
+
+  /* Encres. `ink-faint` s'écarte de la palette fournie : voir ECARTS_DE_PALETTE. */
+  --ink: #e7ebf2;
+  --ink-muted: #9aa8bf;
+  --ink-faint: #80899f;
+
+  --brand: #4c8dff;
+  --brand-strong: #6ba3ff;
+
+  /* Statuts. `status-ouvert` est l'alias de `brand` : un ticket ouvert est
+     l'état par défaut, il porte donc la couleur d'accent. */
+  --status-brouillon: #6b7480;
+  --status-ouvert: #4c8dff;
+  --status-reclame: #e8a53d;
+  --status-soumis: #a78bfa;
+  --status-fusionne: #34d399;
+
+  /* Catégories de patterns (section 5.2). */
+  --pattern-planification: #7c7ff2;
+  --pattern-qualite: #2dd4bf;
+  --pattern-execution: #fb923c;
+  --pattern-revue: #f472b6;
+  --pattern-securite: #f2555a;
+  --pattern-orchestration: #c084fc;
+
+  /* Santé d'un jalon : trois alias, aucune couleur propre. Un jalon à jour se
+     lit comme un ticket fusionné, et un jalon bloqué comme une alerte. */
+  --health-a-jour: var(--status-fusionne);
+  --health-a-risque: var(--status-reclame);
+  --health-bloque: var(--pattern-securite);
+
+  /* Jauge de Vibe Score : un dégradé continu, du gris au bleu de marque. */
+  --vibe-score-low: var(--status-brouillon);
+  --vibe-score-mid: var(--status-reclame);
+  --vibe-score-high: var(--brand);
+
+  /* Encre du monogramme d'un PatternChip, posée sur la couleur de catégorie. */
+  --monogramme-ink: #05070c;
+
+  /* Compatibilité : les pages écrites avant ce ticket s'appuient dessus. */
+  --background: var(--surface-100);
+  --foreground: var(--ink);
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pilule: 999px;
+}
+
+:root[data-theme='light'] {
+  --surface-000: #ffffff;
+  --surface-100: #f6f5f1;
+  --surface-200: #ffffff;
+  --surface-300: #ece9e2;
+
+  --border: #ddd8cd;
+  --border-strong: #c7c0b0;
+
+  --ink: #1a1d16;
+  --ink-muted: #5c6055;
+  --ink-faint: #66695e;
+
+  --brand: #2061d5;
+  --brand-strong: #1f56c2;
+
+  --status-brouillon: #6b7280;
+  --status-ouvert: #2061d5;
+  --status-reclame: #b6791a;
+  --status-soumis: #7c5cd6;
+  --status-fusionne: #1d9469;
+
+  --pattern-planification: #4f52d6;
+  --pattern-qualite: #0c8378;
+  --pattern-execution: #c2540a;
+  --pattern-revue: #be185d;
+  --pattern-securite: #d1373d;
+  --pattern-orchestration: #9333ea;
+
+  --monogramme-ink: #ffffff;
 }
 
 @theme inline {
+  --color-surface-000: var(--surface-000);
+  --color-surface-100: var(--surface-100);
+  --color-surface-200: var(--surface-200);
+  --color-surface-300: var(--surface-300);
+  --color-border-subtle: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-space-grotesk);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  background: var(--surface-100);
+  color: var(--ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-space-grotesk), var(--font-inter), system-ui, sans-serif;
+  font-weight: 500;
+}
+
+/**
+ * Battement du PulseDivider.
+ *
+ * Une seule traversée, puis le trait repart : l'animation marque un moment, elle
+ * ne tourne pas en fond. Toute personne ayant demandé moins de mouvement la voit
+ * s'immobiliser — la ligne reste, le battement disparaît.
+ */
+@keyframes schemavibe-battement {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.schemavibe-battement {
+  animation: schemavibe-battement 1.6s cubic-bezier(0.4, 0, 0.2, 1) 1 both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .schemavibe-battement {
+    animation: none;
+    opacity: 0;
+  }
 }

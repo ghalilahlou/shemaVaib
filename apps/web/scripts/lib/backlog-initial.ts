@@ -273,8 +273,23 @@ export const BACKLOG_INITIAL: TicketDuBacklog[] = [
     critere_test:
       'Un jeton émis par une personne ouvre une session qui ne voit que ce que cette personne voit, puis, une fois révoqué, se voit refuser l’échange — la lecture réussie avant révocation prouvant que le refus n’est pas un faux négatif.',
     complexite: 'M',
-    statut: 'ouvert',
+    statut: 'fusionne',
     pattern: 'Guardrail Prompting',
     depend_de: ['SV-011'],
+  },
+  {
+    id: identifiant(15),
+    reference: 'SV-015',
+    titre: 'SV-015 — Système de design SchemaVibe',
+    contexte:
+      'Les pages livrées depuis SV-003 portent chacune leurs propres couleurs et espacements, écrits en dur. Rien ne dit quelle teinte signale un ticket réclamé, ni ce qui distingue un fond de carte d’un fond de page, et la plateforme n’a pas de thème clair. Un référentiel de tokens et une poignée de composants partagés suppriment ces décisions au cas par cas.',
+    criteres_acceptation:
+      'Les tokens de couleur, de typographie, d’espacement et de rayon vivent en variables CSS, thème sombre par défaut et thème clair sous data-theme="light". Six composants partagés dans components/ui/ : StatusBadge, PatternChip, HealthIndicator, VibeScoreGauge, PulseDivider, TicketCard. Aucun ne porte de couleur propre, et aucun ne fait reposer une information sur la seule couleur.',
+    critere_test:
+      'Un test de contraste automatisé, et non une relecture visuelle : tout texte atteint 4,5:1 sur chacune des quatre surfaces, dans les deux thèmes, et chaque pastille atteint 3:1. Le même test vérifie que la feuille de style transcrit fidèlement les tokens, sans quoi il validerait une palette que l’application n’utilise pas.',
+    complexite: 'M',
+    statut: 'ouvert',
+    pattern: 'Spec-First',
+    depend_de: ['SV-004'],
   },
 ];
