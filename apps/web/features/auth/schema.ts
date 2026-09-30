@@ -20,9 +20,9 @@ export const MESSAGE_MOT_DE_PASSE_TROP_COURT = `Le mot de passe doit faire au mo
 export const MESSAGE_MOT_DE_PASSE_TROP_SIMPLE =
   'Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre.';
 
-const emailSchema = z.string().trim().pipe(z.email(MESSAGE_EMAIL_INVALIDE));
+export const emailSchema = z.string().trim().pipe(z.email(MESSAGE_EMAIL_INVALIDE));
 
-const motDePasseSchema = z
+export const motDePasseSchema = z
   .string()
   .min(MIN_PASSWORD_LENGTH, MESSAGE_MOT_DE_PASSE_TROP_COURT)
   .refine(
@@ -30,9 +30,12 @@ const motDePasseSchema = z
     MESSAGE_MOT_DE_PASSE_TROP_SIMPLE,
   );
 
+/** Nom public, tel qu'il s'affiche aux autres contributeurs. */
+export const nomSchema = z.string().trim().min(1, MESSAGE_NOM_REQUIS).max(MAX_USER_NAME_LENGTH);
+
 /** Formulaire d'inscription par e-mail et mot de passe. */
 export const signUpSchema = z.object({
-  nom: z.string().trim().min(1, MESSAGE_NOM_REQUIS).max(MAX_USER_NAME_LENGTH),
+  nom: nomSchema,
   email: emailSchema,
   motDePasse: motDePasseSchema,
 });
@@ -59,3 +62,23 @@ export const magicLinkSchema = z.object({
 });
 
 export type MagicLinkValues = z.infer<typeof magicLinkSchema>;
+
+export const MESSAGE_CONFIRMATION_DIFFERENTE = 'Les deux mots de passe ne sont pas identiques.';
+
+/**
+ * Nouveau mot de passe (SV-021), saisi deux fois.
+ *
+ * Mêmes règles qu'à l'inscription : c'est ici qu'un mot de passe est choisi, et
+ * Supabase Auth refuserait de toute façon ce que ces règles écartent.
+ */
+export const nouveauMotDePasseSchema = z
+  .object({
+    motDePasse: motDePasseSchema,
+    confirmation: z.string(),
+  })
+  .refine((valeurs) => valeurs.motDePasse === valeurs.confirmation, {
+    message: MESSAGE_CONFIRMATION_DIFFERENTE,
+    path: ['confirmation'],
+  });
+
+export type NouveauMotDePasseValues = z.infer<typeof nouveauMotDePasseSchema>;

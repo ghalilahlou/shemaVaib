@@ -43,6 +43,12 @@ export default async function SignInPage({ searchParams }: PageProps<'/connexion
 
       <SignInForm destination={destination} messageInitial={messageInitial} />
 
+      <p className="-mt-3 text-sm opacity-70">
+        <Link href="/mot-de-passe-oublie" className="underline">
+          Mot de passe oublié ?
+        </Link>
+      </p>
+
       <div className="flex items-center gap-3 text-xs opacity-50">
         <span className="h-px flex-1 bg-current" />
         ou

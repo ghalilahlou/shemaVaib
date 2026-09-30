@@ -483,6 +483,23 @@ export type Database = {
         }
       }
       est_proprietaire_du_projet: { Args: { projet: string }; Returns: boolean }
+      modifier_mon_nom: {
+        Args: { nom: string }
+        Returns: {
+          cree_le: string
+          id: string
+          maj_le: string
+          nom: string
+          vibe_score: number | null
+          xp: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "users"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       projet_est_public: { Args: { projet: string }; Returns: boolean }
       reclamer_ticket: {
         Args: { ticket: string }

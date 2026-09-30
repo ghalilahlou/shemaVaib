@@ -11,6 +11,9 @@
 
 export const DESTINATION_PAR_DEFAUT = '/projets';
 
+/** Page où atterrit un lien de réinitialisation, une fois la session ouverte (SV-021). */
+export const CHEMIN_NOUVEAU_MOT_DE_PASSE = '/mot-de-passe/nouveau';
+
 /** Nom du paramètre, dans l'URL comme dans le `FormData`. */
 export const PARAMETRE_DESTINATION = 'next';
 

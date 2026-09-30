@@ -1,6 +1,7 @@
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../lib/supabase/database.types';
+import { lienDuDernierCourriel } from './outils/courriel';
 
 /**
  * SV-001 — parcours end-to-end de l'authentification (section 21).
@@ -12,7 +13,6 @@ import type { Database } from '../lib/supabase/database.types';
  */
 
 const MOT_DE_PASSE = 'MotDePasseDeTest12345';
-const MAILPIT_URL = 'http://127.0.0.1:54324';
 
 let admin: SupabaseClient<Database>;
 const comptesACreerPuisSupprimer: string[] = [];
@@ -65,30 +65,6 @@ async function sInscrire(page: Page, nom: string, email: string): Promise<void> 
 
   await expect(page.getByTestId('session-utilisateur')).toHaveText(nom);
   await retenirCompte(email);
-}
-
-/**
- * Lien de vérification du dernier courriel reçu par cette adresse.
- *
- * Mailpit, le serveur mail de la stack Supabase locale, garde les messages et
- * les rend du plus récent au plus ancien.
- */
-async function lienDuDernierCourriel(request: APIRequestContext, email: string): Promise<string> {
-  const boite = await request.get(`${MAILPIT_URL}/api/v1/search?query=to:${email}`);
-  const resultats = (await boite.json()) as { messages: { ID: string }[] };
-  expect(resultats.messages.length).toBeGreaterThan(0);
-
-  const messageId = resultats.messages[0]!.ID;
-  const message = await request.get(`${MAILPIT_URL}/api/v1/message/${messageId}`);
-  const corps = (await message.json()) as { Text: string; HTML: string };
-
-  const lien = /http:\/\/127\.0\.0\.1:54321\/auth\/v1\/verify\?[^\s"<]+/.exec(
-    `${corps.Text}
-${corps.HTML}`,
-  );
-  expect(lien, 'le courriel doit contenir un lien de vérification').not.toBeNull();
-
-  return lien![0].replaceAll('&amp;', '&');
 }
 
 /** Crée un compte confirmé, sans passer par le formulaire. */
