@@ -2,6 +2,18 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
+  ConnexionRefusee,
+  connexionDepuisEnvironnement,
+  type SourceSession,
+} from './lib/plateforme.js';
+import {
+  ReclamationRefusee,
+  claimTicketInputSchema,
+  claimTicketOutputSchema,
+  reclamerEtLireTicket,
+  resumerEnTexte as resumerReclamation,
+} from './tools/claim-ticket.js';
+import {
   resumerEnTexte,
   scanRepoInputSchema,
   scanRepoOutputSchema,
@@ -14,17 +26,38 @@ import {
  * Un seul serveur pour tous les outils compatibles MCP — Claude Code, Cursor et
  * les autres — plutôt qu'une intégration par éditeur.
  *
- * Il n'expose pour l'instant que `scan_repo`, qui lit et n'écrit rien.
- * `create_tickets`, `claim_ticket` et `submit_solution` viendront avec leurs
- * propres tickets ; la règle qu'ils devront respecter est déjà posée : jamais
- * de création sans confirmation explicite.
+ * `scan_repo` lit un dépôt local et n'écrit rien. `claim_ticket` écrit sur la
+ * plateforme, au nom du porteur du jeton personnel (SV-014) et jamais avec plus
+ * de droits que lui. `create_tickets` et `submit_solution` viendront avec leurs
+ * propres tickets ; la règle que le premier devra respecter est déjà posée :
+ * jamais de création sans confirmation explicite.
  */
 
 export const MCP_SERVER_NAME = 'schemavibe' as const;
 export const MCP_SERVER_VERSION = '0.1.0' as const;
 
-export function creerServeur(): McpServer {
+export interface OptionsServeur {
+  /**
+   * Fournit la session des outils qui agissent sur la plateforme. Par défaut, la
+   * connexion décrite par l'environnement ; les tests en injectent une autre.
+   */
+  session?: () => SourceSession;
+}
+
+/** Réponse d'échec lisible par le modèle, sans sortie structurée. */
+function echec(message: string) {
+  return { isError: true, content: [{ type: 'text' as const, text: message }] };
+}
+
+export function creerServeur(options: OptionsServeur = {}): McpServer {
   const serveur = new McpServer({ name: MCP_SERVER_NAME, version: MCP_SERVER_VERSION });
+
+  // La connexion n'est établie qu'au premier outil qui en a besoin : un serveur
+  // sans jeton configuré doit continuer de servir `scan_repo`, qui n'en dépend
+  // pas, et ne refuser que ce qui l'exige vraiment.
+  let session: SourceSession | null = null;
+  const obtenirSession = (): SourceSession =>
+    (session ??= (options.session ?? connexionDepuisEnvironnement)());
 
   serveur.registerTool(
     'scan_repo',
@@ -50,6 +83,42 @@ export function creerServeur(): McpServer {
         content: [{ type: 'text' as const, text: resumerEnTexte(resultat) }],
         structuredContent: resultat,
       };
+    },
+  );
+
+  serveur.registerTool(
+    'claim_ticket',
+    {
+      title: 'Réclamer un ticket',
+      description:
+        'Réclame un ticket ouvert de la plateforme SchemaVibe au nom du porteur du jeton ' +
+        'personnel, puis rend son contexte complet : critères d’acceptation, critère de test, ' +
+        'patterns suggérés, tickets bloquants et tentatives précédentes. Réclamer un ticket déjà ' +
+        'tenu par la même personne reprend simplement le travail en cours.',
+      inputSchema: claimTicketInputSchema,
+      outputSchema: claimTicketOutputSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async ({ ticket }) => {
+      try {
+        const resultat = await reclamerEtLireTicket(obtenirSession(), ticket);
+
+        return {
+          content: [{ type: 'text' as const, text: resumerReclamation(resultat) }],
+          structuredContent: resultat,
+        };
+      } catch (erreur) {
+        if (erreur instanceof ReclamationRefusee || erreur instanceof ConnexionRefusee) {
+          return echec(erreur.message);
+        }
+
+        throw erreur;
+      }
     },
   );
 

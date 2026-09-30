@@ -89,7 +89,19 @@ export async function echangerJeton(options: OptionsConnexion): Promise<SessionM
   return session.data;
 }
 
-export class ConnexionPlateforme {
+/**
+ * Ce dont un outil d'écriture a besoin : une identité, et un client qui la porte.
+ *
+ * `ConnexionPlateforme` en est l'implémentation réelle ; les tests en
+ * fournissent une qui ouvre directement une session sur la base locale, sans
+ * passer par l'échange de jeton déjà couvert par SV-014.
+ */
+export interface SourceSession {
+  identite(): Promise<IdentiteMcp>;
+  client(): Promise<SupabaseClient>;
+}
+
+export class ConnexionPlateforme implements SourceSession {
   readonly #options: OptionsConnexion;
   readonly #maintenant: () => number;
   #session: SessionMcp | null = null;
