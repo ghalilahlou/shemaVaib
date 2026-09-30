@@ -23,6 +23,19 @@ export const MESSAGE_IDENTIFIANTS_INVALIDES = 'Adresse e-mail ou mot de passe in
 
 export const MESSAGE_FORMULAIRE_INVALIDE = 'Le formulaire contient des erreurs.';
 export const MESSAGE_INSCRIPTION_IMPOSSIBLE = 'L’inscription a échoué. Réessayez dans un instant.';
+export const MESSAGE_TROP_DE_DEMANDES =
+  'Trop de demandes en peu de temps. Patientez quelques minutes avant de réessayer.';
+
+/**
+ * Réponse à une inscription qui n'ouvre pas de session : adresse à confirmer,
+ * ou adresse déjà inscrite (SV-016).
+ *
+ * Les deux cas reçoivent le même texte. Afficher le refus « compte existant »
+ * ferait du formulaire d'inscription l'oracle d'existence que la connexion et le
+ * magic link s'interdisent déjà.
+ */
+export const MESSAGE_INSCRIPTION_A_CONFIRMER =
+  'Si cette adresse n’était pas encore inscrite, un e-mail de confirmation vient d’y être envoyé : suivez son lien pour activer le compte. Si elle l’était déjà, connectez-vous ou demandez un lien de connexion.';
 
 /**
  * Même message que l'adresse existe ou non, pour la même raison : la demande de

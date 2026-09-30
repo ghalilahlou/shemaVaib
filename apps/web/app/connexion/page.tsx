@@ -6,6 +6,11 @@ import { recupererUtilisateurConnecte } from '../../features/auth/repository/ses
 import { SignInForm } from '../../features/auth/components/sign-in-form';
 import { MagicLinkForm } from '../../features/auth/components/magic-link-form';
 import { GithubButton } from '../../features/auth/components/github-button';
+import {
+  PARAMETRE_DESTINATION,
+  avecDestination,
+  destinationSure,
+} from '../../features/auth/destination';
 
 export const metadata: Metadata = {
   title: 'Connexion — SchemaVibe',
@@ -18,14 +23,15 @@ const MESSAGES_ERREUR: Record<string, string> = {
 };
 
 export default async function SignInPage({ searchParams }: PageProps<'/connexion'>) {
+  const parametres = await searchParams;
+  const destination = destinationSure(parametres[PARAMETRE_DESTINATION]);
   const client = await createServerSupabaseClient();
   const utilisateur = await recupererUtilisateurConnecte(client);
 
   if (utilisateur) {
-    redirect('/projets');
+    redirect(destination);
   }
 
-  const parametres = await searchParams;
   const codeErreur = typeof parametres.erreur === 'string' ? parametres.erreur : undefined;
   const messageInitial = codeErreur ? MESSAGES_ERREUR[codeErreur] : undefined;
 
@@ -35,7 +41,7 @@ export default async function SignInPage({ searchParams }: PageProps<'/connexion
         <h1 className="text-2xl font-semibold tracking-tight">Se connecter</h1>
       </header>
 
-      <SignInForm messageInitial={messageInitial} />
+      <SignInForm destination={destination} messageInitial={messageInitial} />
 
       <div className="flex items-center gap-3 text-xs opacity-50">
         <span className="h-px flex-1 bg-current" />
@@ -43,12 +49,12 @@ export default async function SignInPage({ searchParams }: PageProps<'/connexion
         <span className="h-px flex-1 bg-current" />
       </div>
 
-      <MagicLinkForm />
-      <GithubButton />
+      <MagicLinkForm destination={destination} />
+      <GithubButton destination={destination} />
 
       <p className="text-sm opacity-70">
         Pas encore de compte ?{' '}
-        <Link href="/inscription" className="underline">
+        <Link href={avecDestination('/inscription', destination)} className="underline">
           S’inscrire
         </Link>
       </p>

@@ -5,17 +5,23 @@ import { createServerSupabaseClient } from '../../lib/supabase/server';
 import { recupererUtilisateurConnecte } from '../../features/auth/repository/session-repository';
 import { SignUpForm } from '../../features/auth/components/sign-up-form';
 import { GithubButton } from '../../features/auth/components/github-button';
+import {
+  PARAMETRE_DESTINATION,
+  avecDestination,
+  destinationSure,
+} from '../../features/auth/destination';
 
 export const metadata: Metadata = {
   title: 'Inscription — SchemaVibe',
 };
 
-export default async function SignUpPage() {
+export default async function SignUpPage({ searchParams }: PageProps<'/inscription'>) {
+  const destination = destinationSure((await searchParams)[PARAMETRE_DESTINATION]);
   const client = await createServerSupabaseClient();
   const utilisateur = await recupererUtilisateurConnecte(client);
 
   if (utilisateur) {
-    redirect('/projets');
+    redirect(destination);
   }
 
   return (
@@ -27,7 +33,7 @@ export default async function SignUpPage() {
         </p>
       </header>
 
-      <SignUpForm />
+      <SignUpForm destination={destination} />
 
       <div className="flex items-center gap-3 text-xs opacity-50">
         <span className="h-px flex-1 bg-current" />
@@ -35,11 +41,11 @@ export default async function SignUpPage() {
         <span className="h-px flex-1 bg-current" />
       </div>
 
-      <GithubButton />
+      <GithubButton destination={destination} />
 
       <p className="text-sm opacity-70">
         Déjà un compte ?{' '}
-        <Link href="/connexion" className="underline">
+        <Link href={avecDestination('/connexion', destination)} className="underline">
           Se connecter
         </Link>
       </p>

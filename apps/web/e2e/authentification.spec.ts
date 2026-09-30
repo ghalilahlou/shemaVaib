@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../lib/supabase/database.types';
 
@@ -65,6 +65,47 @@ async function sInscrire(page: Page, nom: string, email: string): Promise<void> 
 
   await expect(page.getByTestId('session-utilisateur')).toHaveText(nom);
   await retenirCompte(email);
+}
+
+/**
+ * Lien de vérification du dernier courriel reçu par cette adresse.
+ *
+ * Mailpit, le serveur mail de la stack Supabase locale, garde les messages et
+ * les rend du plus récent au plus ancien.
+ */
+async function lienDuDernierCourriel(request: APIRequestContext, email: string): Promise<string> {
+  const boite = await request.get(`${MAILPIT_URL}/api/v1/search?query=to:${email}`);
+  const resultats = (await boite.json()) as { messages: { ID: string }[] };
+  expect(resultats.messages.length).toBeGreaterThan(0);
+
+  const messageId = resultats.messages[0]!.ID;
+  const message = await request.get(`${MAILPIT_URL}/api/v1/message/${messageId}`);
+  const corps = (await message.json()) as { Text: string; HTML: string };
+
+  const lien = /http:\/\/127\.0\.0\.1:54321\/auth\/v1\/verify\?[^\s"<]+/.exec(
+    `${corps.Text}
+${corps.HTML}`,
+  );
+  expect(lien, 'le courriel doit contenir un lien de vérification').not.toBeNull();
+
+  return lien![0].replaceAll('&amp;', '&');
+}
+
+/** Crée un compte confirmé, sans passer par le formulaire. */
+async function creerCompte(email: string, nom: string): Promise<void> {
+  const { data } = await admin.auth.admin.createUser({
+    email,
+    password: MOT_DE_PASSE,
+    email_confirm: true,
+    user_metadata: { nom },
+  });
+  comptesACreerPuisSupprimer.push(data.user!.id);
+}
+
+async function seConnecterParMotDePasse(page: Page, email: string): Promise<void> {
+  await page.getByLabel('Adresse e-mail').first().fill(email);
+  await page.getByLabel('Mot de passe').fill(MOT_DE_PASSE);
+  await page.getByRole('button', { name: 'Se connecter' }).click();
 }
 
 test('un visiteur anonyme voit les liens de connexion et d’inscription', async ({ page }) => {
@@ -231,21 +272,92 @@ test('un magic link connecte réellement son destinataire', async ({ page, reque
   await page.getByTestId('magic-link-envoyer').click();
   await expect(page.getByTestId('auth-succes')).toBeVisible();
 
-  // Mailpit, le serveur mail de la stack Supabase locale, garde le message.
-  const boite = await request.get(`${MAILPIT_URL}/api/v1/search?query=to:${email}`);
-  const resultats = (await boite.json()) as { messages: { ID: string }[] };
-  expect(resultats.messages.length).toBeGreaterThan(0);
-
-  const messageId = resultats.messages[0]!.ID;
-  const message = await request.get(`${MAILPIT_URL}/api/v1/message/${messageId}`);
-  const corps = (await message.json()) as { Text: string; HTML: string };
-
-  const lien = /http:\/\/127\.0\.0\.1:54321\/auth\/v1\/verify\?[^\s"<]+/.exec(
-    `${corps.Text}\n${corps.HTML}`,
-  );
-  expect(lien, 'le courriel doit contenir un lien de vérification').not.toBeNull();
-
-  await page.goto(lien![0].replaceAll('&amp;', '&'));
+  await page.goto(await lienDuDernierCourriel(request, email));
 
   await expect(page.getByTestId('session-utilisateur')).toHaveText('Destinataire du lien');
+});
+
+/*
+ * SV-016 — la connexion ramène là où l'on allait, et nulle part ailleurs.
+ */
+
+test('la connexion par mot de passe ramène à la page protégée demandée', async ({ page }) => {
+  const email = adresseUnique('retour-mot-de-passe');
+  await creerCompte(email, 'Retour après connexion');
+
+  await page.goto('/projets/nouveau');
+  await expect(page).toHaveURL(/\/connexion\?next=%2Fprojets%2Fnouveau$/);
+
+  await seConnecterParMotDePasse(page, email);
+
+  await expect(page).toHaveURL(/\/projets\/nouveau$/);
+  await expect(page.getByTestId('session-utilisateur')).toHaveText('Retour après connexion');
+});
+
+test('une destination externe est ignorée après connexion', async ({ page, baseURL }) => {
+  const email = adresseUnique('redirection-ouverte');
+  await creerCompte(email, 'Cible de redirection');
+
+  // `/\exemple.com` passait l'ancienne vérification du callback, et les
+  // navigateurs le lisent comme `//exemple.com`.
+  await page.goto('/connexion?next=%2F%5Cexemple.com');
+  await seConnecterParMotDePasse(page, email);
+
+  // La connexion a bien eu lieu : l'absence de redirection externe ne vient pas
+  // d'un échec de connexion.
+  await expect(page.getByTestId('session-utilisateur')).toHaveText('Cible de redirection');
+  expect(new URL(page.url()).origin).toBe(new URL(baseURL!).origin);
+  await expect(page).toHaveURL(/\/projets$/);
+});
+
+test('le magic link ramène à la page protégée demandée', async ({ page, request }) => {
+  const email = adresseUnique('retour-magic');
+  await creerCompte(email, 'Retour par lien');
+
+  await page.goto('/parametres/jetons');
+  await expect(page).toHaveURL(/\/connexion\?next=%2Fparametres%2Fjetons$/);
+
+  await page.getByLabel('Recevoir un lien de connexion').fill(email);
+  await page.getByTestId('magic-link-envoyer').click();
+  await expect(page.getByTestId('auth-succes')).toBeVisible();
+
+  await page.goto(await lienDuDernierCourriel(request, email));
+
+  await expect(page).toHaveURL(/\/parametres\/jetons$/);
+  await expect(page.getByTestId('session-utilisateur')).toHaveText('Retour par lien');
+});
+
+test('l’inscription conserve la destination venue de la connexion', async ({ page }) => {
+  const email = adresseUnique('retour-inscription');
+
+  await page.goto('/connexion?next=%2Fparametres%2Fjetons');
+  await page.getByRole('link', { name: 'S’inscrire' }).last().click();
+  await expect(page).toHaveURL(/\/inscription\?next=%2Fparametres%2Fjetons$/);
+
+  await page.getByLabel('Nom').fill('Nouvelle venue');
+  await page.getByLabel('Adresse e-mail').fill(email);
+  await page.getByLabel('Mot de passe').fill(MOT_DE_PASSE);
+  await page.getByRole('button', { name: 'Créer mon compte' }).click();
+
+  await expect(page).toHaveURL(/\/parametres\/jetons$/);
+  await retenirCompte(email);
+});
+
+test('l’inscription ne dit pas qu’une adresse est déjà prise', async ({ page }) => {
+  const email = adresseUnique('deja-inscrit');
+  await creerCompte(email, 'Déjà là');
+
+  await page.goto('/inscription');
+  await page.getByLabel('Nom').fill('Usurpateur');
+  await page.getByLabel('Adresse e-mail').fill(email);
+  await page.getByLabel('Mot de passe').fill(MOT_DE_PASSE);
+  await page.getByRole('button', { name: 'Créer mon compte' }).click();
+
+  // La réponse est celle d'une adresse à confirmer, jamais un refus.
+  await expect(page.getByTestId('auth-succes')).toContainText(
+    'Si cette adresse n’était pas encore inscrite',
+  );
+  await expect(page.getByTestId('auth-erreur')).toHaveCount(0);
+  await expect(page.getByText(/already|déjà inscrite/i)).toHaveCount(0);
+  await expect(page.getByTestId('session-utilisateur')).toHaveCount(0);
 });

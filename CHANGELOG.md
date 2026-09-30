@@ -98,3 +98,13 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,
   `NULL` tant qu'aucun calcul n'a eu lieu. Appliqué par une migration corrective ; la migration
   initiale reste inchangée.
+
+- **SV-016** — Durcissement de l'authentification. Une page protégée renvoie vers la connexion en
+  retenant où l'on allait, et les quatre chemins — mot de passe, magic link, GitHub, inscription —
+  y ramènent désormais au lieu de conduire toujours à `/projets`. La destination est tranchée par
+  une règle unique, `destinationSure`, qui confie l'analyse à l'analyseur d'URL : l'ancienne
+  vérification du callback laissait passer `/\exemple.com`, que les navigateurs lisent comme
+  `//exemple.com` — une redirection ouverte. L'inscription n'affiche plus le message brut de
+  Supabase, qui disait en clair qu'une adresse était déjà inscrite ; ce cas reçoit la même réponse
+  qu'une adresse à confirmer. Une inscription qui n'ouvre pas de session, une fois la confirmation
+  d'e-mail activée, invite à confirmer l'adresse au lieu de rediriger un visiteur anonyme.

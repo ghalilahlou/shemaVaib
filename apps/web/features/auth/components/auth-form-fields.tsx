@@ -1,5 +1,7 @@
 'use client';
 
+import { PARAMETRE_DESTINATION } from '../destination';
+
 /**
  * Briques communes aux formulaires d'authentification.
  *
@@ -65,6 +67,16 @@ export function ChampTexte({
       ) : null}
     </div>
   );
+}
+
+/**
+ * Destination après connexion, transmise à la Server Action (SV-016).
+ *
+ * Elle est revérifiée côté serveur par `destinationSure` : ce champ est aussi
+ * modifiable qu'un paramètre d'URL, il ne fait autorité sur rien.
+ */
+export function ChampDestination({ destination }: { destination: string }) {
+  return <input type="hidden" name={PARAMETRE_DESTINATION} value={destination} />;
 }
 
 export function MessageAlerte({ message }: { message: string }) {

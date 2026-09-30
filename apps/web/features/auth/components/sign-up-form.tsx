@@ -4,9 +4,15 @@ import { useActionState } from 'react';
 import { signUpAction } from '../actions/sign-up';
 import { ETAT_INITIAL, type AuthActionState } from '../actions/auth-action-state';
 import { MIN_PASSWORD_LENGTH } from '../schema';
-import { BoutonSoumettre, ChampTexte, MessageAlerte } from './auth-form-fields';
+import {
+  BoutonSoumettre,
+  ChampDestination,
+  ChampTexte,
+  MessageAlerte,
+  MessageSucces,
+} from './auth-form-fields';
 
-export function SignUpForm() {
+export function SignUpForm({ destination }: { destination: string }) {
   const [etat, action, enCours] = useActionState<AuthActionState, FormData>(
     signUpAction,
     ETAT_INITIAL,
@@ -17,6 +23,8 @@ export function SignUpForm() {
   return (
     <form action={action} className="flex flex-col gap-5" noValidate>
       {etat.statut === 'erreur' ? <MessageAlerte message={etat.message} /> : null}
+      {etat.statut === 'succes' ? <MessageSucces message={etat.message} /> : null}
+      <ChampDestination destination={destination} />
 
       <ChampTexte
         nom="nom"

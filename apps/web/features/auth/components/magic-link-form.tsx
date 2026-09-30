@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { sendMagicLinkAction } from '../actions/sign-in';
 import { ETAT_INITIAL, type AuthActionState } from '../actions/auth-action-state';
-import { ChampTexte, MessageAlerte, MessageSucces } from './auth-form-fields';
+import { ChampDestination, ChampTexte, MessageAlerte, MessageSucces } from './auth-form-fields';
 
 /**
  * Connexion sans mot de passe : l'utilisateur reçoit un lien à usage unique.
@@ -12,7 +12,7 @@ import { ChampTexte, MessageAlerte, MessageSucces } from './auth-form-fields';
  * deux formulaires sont distincts pour que leurs états d'erreur ne se mélangent
  * pas.
  */
-export function MagicLinkForm() {
+export function MagicLinkForm({ destination }: { destination: string }) {
   const [etat, action, enCours] = useActionState<AuthActionState, FormData>(
     sendMagicLinkAction,
     ETAT_INITIAL,
@@ -24,6 +24,7 @@ export function MagicLinkForm() {
     <form action={action} className="flex flex-col gap-4" noValidate>
       {etat.statut === 'erreur' ? <MessageAlerte message={etat.message} /> : null}
       {etat.statut === 'succes' ? <MessageSucces message={etat.message} /> : null}
+      <ChampDestination destination={destination} />
 
       <ChampTexte
         nom="email"

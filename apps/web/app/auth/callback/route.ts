@@ -1,5 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerSupabaseClient } from '../../../lib/supabase/server';
+import {
+  PARAMETRE_DESTINATION,
+  cheminDeConnexion,
+  destinationSure,
+} from '../../../features/auth/destination';
 
 /**
  * Point d'atterrissage des connexions qui passent par un aller-retour externe :
@@ -39,23 +44,20 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const origine = origineDuVisiteur(request);
   const code = searchParams.get('code');
-  const destination = searchParams.get('next') ?? '/projets';
-
   // `next` vient de l'URL : il ne doit pouvoir désigner qu'un chemin interne,
   // sans quoi le callback deviendrait une redirection ouverte.
-  const destinationSure =
-    destination.startsWith('/') && !destination.startsWith('//') ? destination : '/projets';
+  const destination = destinationSure(searchParams.get(PARAMETRE_DESTINATION));
 
   if (!code) {
-    return NextResponse.redirect(`${origine}/connexion?erreur=lien_invalide`);
+    return NextResponse.redirect(`${origine}${cheminDeConnexion(destination, 'lien_invalide')}`);
   }
 
   const client = await createServerSupabaseClient();
   const { error } = await client.auth.exchangeCodeForSession(code);
 
   if (error) {
-    return NextResponse.redirect(`${origine}/connexion?erreur=lien_expire`);
+    return NextResponse.redirect(`${origine}${cheminDeConnexion(destination, 'lien_expire')}`);
   }
 
-  return NextResponse.redirect(`${origine}${destinationSure}`);
+  return NextResponse.redirect(`${origine}${destination}`);
 }

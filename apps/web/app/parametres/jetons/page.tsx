@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { CHEMIN_SESSION_MCP } from '@schemavibe/shared-types';
 import { createServerSupabaseClient } from '../../../lib/supabase/server';
 import { recupererUtilisateurConnecte } from '../../../features/auth/repository/session-repository';
+import { cheminDeConnexion } from '../../../features/auth/destination';
 import { listerJetons } from '../../../features/api-tokens/repository/api-tokens-repository';
 import { JetonForm } from '../../../features/api-tokens/components/jeton-form';
 import { ListeJetons } from '../../../features/api-tokens/components/liste-jetons';
@@ -19,7 +20,7 @@ export default async function JetonsPage() {
   // Rediriger plutôt que d'afficher une page vide. La RLS reste la protection :
   // cette redirection est un confort.
   if (!utilisateur) {
-    redirect('/connexion?next=/parametres/jetons');
+    redirect(cheminDeConnexion('/parametres/jetons'));
   }
 
   const jetons = await listerJetons(client);
