@@ -3,9 +3,15 @@
 import { useActionState } from 'react';
 import { signInAction } from '../actions/sign-in';
 import { ETAT_INITIAL, type AuthActionState } from '../actions/auth-action-state';
-import { BoutonSoumettre, ChampTexte, MessageAlerte } from './auth-form-fields';
+import { BoutonSoumettre, ChampDestination, ChampTexte, MessageAlerte } from './auth-form-fields';
 
-export function SignInForm({ messageInitial }: { messageInitial?: string | undefined }) {
+export function SignInForm({
+  destination,
+  messageInitial,
+}: {
+  destination: string;
+  messageInitial?: string | undefined;
+}) {
   const [etat, action, enCours] = useActionState<AuthActionState, FormData>(
     signInAction,
     ETAT_INITIAL,
@@ -17,6 +23,7 @@ export function SignInForm({ messageInitial }: { messageInitial?: string | undef
   return (
     <form action={action} className="flex flex-col gap-5" noValidate>
       {message ? <MessageAlerte message={message} /> : null}
+      <ChampDestination destination={destination} />
 
       <ChampTexte
         nom="email"

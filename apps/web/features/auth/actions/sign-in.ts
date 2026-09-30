@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createServerSupabaseClient } from '../../../lib/supabase/server';
 import { magicLinkSchema, signInSchema } from '../schema';
+import { PARAMETRE_DESTINATION, adresseDeRetour, destinationSure } from '../destination';
 import {
   MESSAGE_FORMULAIRE_INVALIDE,
   MESSAGE_IDENTIFIANTS_INVALIDES,
@@ -48,7 +49,7 @@ export async function signInAction(
   }
 
   revalidatePath('/', 'layout');
-  redirect('/projets');
+  redirect(destinationSure(formData.get(PARAMETRE_DESTINATION)));
 }
 
 /** Envoi d'un lien de connexion à usage unique (magic link). */
@@ -72,7 +73,10 @@ export async function sendMagicLinkAction(
   await client.auth.signInWithOtp({
     email: resultat.data.email,
     options: {
-      emailRedirectTo: `${siteUrl}/auth/callback`,
+      emailRedirectTo: adresseDeRetour(
+        siteUrl,
+        destinationSure(formData.get(PARAMETRE_DESTINATION)),
+      ),
       shouldCreateUser: false,
     },
   });

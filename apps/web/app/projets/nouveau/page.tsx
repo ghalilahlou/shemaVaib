@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { createServerSupabaseClient } from '../../../lib/supabase/server';
 import { recupererUtilisateurConnecte } from '../../../features/auth/repository/session-repository';
+import { cheminDeConnexion } from '../../../features/auth/destination';
 import { ProjectForm } from '../../../features/projects/components/project-form';
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default async function NewProjectPage() {
   // de la Server Action reste en place : cette redirection est un confort, pas
   // la protection.
   if (!utilisateur) {
-    redirect('/connexion?next=/projets/nouveau');
+    redirect(cheminDeConnexion('/projets/nouveau'));
   }
 
   return (

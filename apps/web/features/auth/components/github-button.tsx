@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createBrowserSupabaseClient } from '../../../lib/supabase/client';
+import { adresseDeRetour } from '../destination';
 
 /**
  * Connexion via GitHub.
@@ -14,7 +15,7 @@ import { createBrowserSupabaseClient } from '../../../lib/supabase/client';
  * l'afficher sans identifiants GitHub valides ne mènerait qu'à une page
  * d'erreur du fournisseur.
  */
-export function GithubButton() {
+export function GithubButton({ destination }: { destination: string }) {
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -25,7 +26,7 @@ export function GithubButton() {
     const client = createBrowserSupabaseClient();
     const { error } = await client.auth.signInWithOAuth({
       provider: 'github',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: adresseDeRetour(window.location.origin, destination) },
     });
 
     if (error) {
