@@ -1,6 +1,6 @@
 ---
 description: Outils SchemaVibe. Usage : /schemavibe scan [chemin] · /schemavibe work <id> · /schemavibe submit [id]
-allowed-tools: mcp__schemavibe__scan_repo, mcp__schemavibe__claim_ticket, mcp__schemavibe__submit_solution
+allowed-tools: mcp__schemavibe__scan_repo, mcp__schemavibe__create_tickets, mcp__schemavibe__claim_ticket, mcp__schemavibe__submit_solution
 ---
 
 Sous-commande demandée : `$ARGUMENTS`
@@ -18,9 +18,20 @@ Présente ensuite le constat ainsi :
 3. Une phrase rappelant qu'aucun ticket n'a été créé.
 
 Tu peux proposer au porteur du projet ce que ces signaux suggèrent comme
-tickets, mais **ne crée rien** : `scan_repo` observe, et la création passera par
-`create_tickets`, qui exigera une confirmation explicite (section 8 du cahier
-des charges). N'invente aucune mesure que l'outil n'a pas rendue.
+tickets. N'invente aucune mesure que l'outil n'a pas rendue.
+
+S'il veut les créer, `scan_repo` n'y suffit pas : il observe. La création passe
+par `create_tickets` et ne se fait **jamais sans confirmation explicite**
+(section 8 du cahier des charges) :
+
+1. Demande l'identifiant du projet cible, que la personne doit porter.
+2. Rédige chaque ticket selon la Definition of Ready : contexte, critères
+   d'acceptation vérifiables (jamais « améliorer X »), critère de test,
+   complexité S/M/L, et au moins un pattern de la bibliothèque.
+3. Appelle `create_tickets` **sans** `confirmer` et montre l'aperçu tel quel :
+   ce qui serait publié, ce qui resterait en brouillon et pourquoi.
+4. Seulement sur un accord clair, rappelle l'outil avec les mêmes arguments et
+   `confirmer: true`. Toute modification demandée repart de l'étape 3.
 
 ## work
 
@@ -79,5 +90,5 @@ Si l'outil refuse, rapporte son message tel quel et arrête-toi.
 ## Autre sous-commande
 
 Si `$ARGUMENTS` est vide ou ne commence ni par `scan`, ni par `work`, ni par
-`submit`, indique que seules ces trois sous-commandes existent pour l'instant,
-l'outil `create_tickets` restant à construire.
+`submit`, indique que ce sont les trois sous-commandes disponibles, la création
+de tickets se faisant à la suite d'un `scan`.
