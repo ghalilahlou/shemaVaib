@@ -11,6 +11,7 @@ import {
   MESSAGE_MAGIC_LINK_ENVOYE,
   type AuthActionState,
 } from './auth-action-state';
+import { urlDuSite } from '../../../lib/configuration';
 
 /** Connexion par e-mail et mot de passe. */
 export async function signInAction(
@@ -68,7 +69,7 @@ export async function sendMagicLinkAction(
   }
 
   const client = await createServerSupabaseClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000';
+  const siteUrl = urlDuSite();
 
   await client.auth.signInWithOtp({
     email: resultat.data.email,

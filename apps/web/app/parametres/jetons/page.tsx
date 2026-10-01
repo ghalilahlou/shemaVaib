@@ -8,6 +8,7 @@ import { cheminDeConnexion } from '../../../features/auth/destination';
 import { listerJetons } from '../../../features/api-tokens/repository/api-tokens-repository';
 import { JetonForm } from '../../../features/api-tokens/components/jeton-form';
 import { ListeJetons } from '../../../features/api-tokens/components/liste-jetons';
+import { urlDuSite } from '../../../lib/configuration';
 
 export const metadata: Metadata = {
   title: 'Jetons d’accès — SchemaVibe',
@@ -58,7 +59,7 @@ export default async function JetonsPage() {
           Dans la configuration du serveur, renseignez l’adresse de cette plateforme et le jeton :
         </p>
         <pre className="overflow-x-auto rounded-md border border-black/10 px-3 py-2 font-mono text-xs dark:border-white/15">
-          {`SCHEMAVIBE_URL=${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000'}\nSCHEMAVIBE_TOKEN=svb_…`}
+          {`SCHEMAVIBE_URL=${urlDuSite()}\nSCHEMAVIBE_TOKEN=svb_…`}
         </pre>
         <p className="opacity-60">
           Le serveur échange ce jeton contre une session sur <code>{CHEMIN_SESSION_MCP}</code>.
