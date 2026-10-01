@@ -98,6 +98,15 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   connectée peut aussi changer le sien. La page `/profil` montre l'XP et le Vibe Score, en lecture
   seule, et permet de changer son nom public, accessible depuis l'en-tête.
 
+- **SV-022** — Préparation du déploiement, indépendante de l'hébergeur. Une seule source pour
+  l'adresse publique du site, obligatoire en production : quatre endroits retombaient sur
+  `127.0.0.1:3000`, ce qui aurait envoyé les liens de connexion vers la machine du destinataire
+  sans aucune erreur. Au démarrage, `instrumentation.ts` vérifie la configuration ; un serveur
+  incomplet journalise ce qui lui manque et ne sert rien. En-têtes de sécurité sur toutes les
+  routes (`X-Frame-Options`, `Strict-Transport-Security`, `Referrer-Policy`…), `X-Powered-By`
+  retiré. Le README de l'application décrit le déploiement : variables, réglages Auth du projet
+  Supabase, mise en service et import du backlog.
+
 ### Corrigé
 
 - **SV-002** — `users.vibe_score` passe de `text` à `numeric(5,2)` sur une échelle de 0 à 100,

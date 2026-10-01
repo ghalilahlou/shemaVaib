@@ -17,6 +17,7 @@ import {
   MESSAGE_SESSION_EXPIREE,
   type AuthActionState,
 } from './auth-action-state';
+import { urlDuSite } from '../../../lib/configuration';
 
 /**
  * Envoi d'un lien de réinitialisation (SV-021).
@@ -41,7 +42,7 @@ export async function demanderReinitialisationAction(
   }
 
   const client = await createServerSupabaseClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000';
+  const siteUrl = urlDuSite();
 
   await client.auth.resetPasswordForEmail(resultat.data.email, {
     redirectTo: adresseDeRetour(siteUrl, CHEMIN_NOUVEAU_MOT_DE_PASSE),

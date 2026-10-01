@@ -12,6 +12,7 @@ import {
   MESSAGE_TROP_DE_DEMANDES,
   type AuthActionState,
 } from './auth-action-state';
+import { urlDuSite } from '../../../lib/configuration';
 
 /** Codes d'erreur de Supabase Auth signifiant « cette adresse a déjà un compte ». */
 const CODES_COMPTE_EXISTANT = new Set(['user_already_exists', 'email_exists']);
@@ -53,7 +54,7 @@ export async function signUpAction(
   }
 
   const destination = destinationSure(formData.get(PARAMETRE_DESTINATION));
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000';
+  const siteUrl = urlDuSite();
   const client = await createServerSupabaseClient();
 
   const { data, error } = await client.auth.signUp({
