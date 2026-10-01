@@ -275,7 +275,16 @@ async function scriptDeTest(racine: string): Promise<string | null> {
   }
 }
 
-/** TODO, FIXME, HACK et XXX laissés dans le code source. */
+/**
+ * TODO, FIXME, HACK et XXX laissés dans le code source.
+ *
+ * Les fichiers de test sont écartés (SV-013), selon les motifs qui servent déjà
+ * à détecter la présence de tests : un test de détecteur contient des marqueurs
+ * délibérés, qui sont ses données et non de la dette. Passé sur son propre
+ * dépôt, `scan_repo` en relevait six, dont cinq venaient de ses fixtures. Les
+ * fichiers de test restent comptés par `analyserTests` ; seuls leurs marqueurs
+ * cessent de compter ici.
+ */
 export async function analyserTodos(racine: string, fichiers: string[]): Promise<Todos> {
   const exemples: TodoTrouve[] = [];
   let total = 0;
@@ -283,7 +292,7 @@ export async function analyserTodos(racine: string, fichiers: string[]): Promise
   for (const fichier of fichiers) {
     const extension = fichier.slice(fichier.lastIndexOf('.'));
 
-    if (!EXTENSIONS_SOURCE.has(extension)) {
+    if (!EXTENSIONS_SOURCE.has(extension) || estUnFichierDeTest(fichier)) {
       continue;
     }
 

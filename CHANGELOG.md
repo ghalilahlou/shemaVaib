@@ -134,3 +134,8 @@ Toutes les modifications livrées sont consignées ici, une entrée par ticket f
   Supabase, qui disait en clair qu'une adresse était déjà inscrite ; ce cas reçoit la même réponse
   qu'une adresse à confirmer. Une inscription qui n'ouvre pas de session, une fois la confirmation
   d'e-mail activée, invite à confirmer l'adresse au lieu de rediriger un visiteur anonyme.
+
+- **SV-013** — `scan_repo` ne compte plus comme dette les marqueurs TODO des fichiers de test,
+  reconnus par les mêmes motifs que ceux qui détectent la présence de tests. Passé sur son propre
+  dépôt, l'outil en relevait six dont cinq venaient de ses fixtures ; il n'en relève plus qu'un.
+  Les fichiers de test restent comptés comme filet de tests.

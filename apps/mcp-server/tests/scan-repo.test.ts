@@ -270,3 +270,54 @@ describe('résumé en texte', () => {
     expect(texte).toContain('src/app.js:2');
   });
 });
+
+describe('TODO des fichiers de test (SV-013)', () => {
+  let racine = '';
+
+  beforeAll(async () => {
+    racine = await mkdtemp(join(tmpdir(), 'schemavibe-todo-tests-'));
+  });
+
+  afterAll(async () => {
+    await rm(racine, { recursive: true, force: true });
+  });
+
+  /** Un dépôt sans git — l'analyse des TODO n'en dépend pas. */
+  async function depot(nom: string, fichiers: Record<string, string>): Promise<string> {
+    const chemin = join(racine, nom);
+
+    for (const [fichier, contenu] of Object.entries(fichiers)) {
+      await mkdir(join(chemin, fichier, '..'), { recursive: true });
+      await writeFile(join(chemin, fichier), contenu);
+    }
+
+    return chemin;
+  }
+
+  it('ne compte pas un marqueur qui ne vit que dans un fichier de test', async () => {
+    const chemin = await depot('marqueur-de-fixture', {
+      'src/app.js': 'export const app = 1;\n',
+      'tests/detecteur.test.js': '// TODO: marqueur délibéré, donnée du test\n',
+      'src/__tests__/autre.js': '// FIXME: fixture elle aussi\n',
+    });
+
+    const { todos, tests } = await scannerDepot(chemin);
+
+    expect(todos.total).toBe(0);
+    expect(todos.exemples).toEqual([]);
+    // Les fichiers de test restent rapportés : seuls leurs marqueurs ne comptent plus.
+    expect(tests.fichiers).toBe(2);
+  });
+
+  it('continue de compter un marqueur du code source à côté', async () => {
+    const chemin = await depot('marqueur-reel', {
+      'src/app.js': '// TODO: brancher la vraie authentification\n',
+      'src/app.spec.js': '// TODO: marqueur délibéré\n',
+    });
+
+    const { todos } = await scannerDepot(chemin);
+
+    expect(todos.total).toBe(1);
+    expect(todos.exemples.map((todo) => todo.fichier)).toEqual(['src/app.js']);
+  });
+});
